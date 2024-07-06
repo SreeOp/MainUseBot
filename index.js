@@ -1,57 +1,57 @@
-require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
-const { PlayerManager } = require('lavacord');
 const fs = require('fs');
+const path = require('path');
+const express = require('express');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+// Create a new client instance
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+// Initialize commands collection
 client.commands = new Collection();
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
+// Command files
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+// Set commands to the collection
 for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
-    client.commands.set(command.data.name, command);
+  const filePath = path.join(commandsPath, file);
+  const command = require(filePath);
+  client.commands.set(command.data.name, command);
 }
 
-client.once('ready', async () => {
-    const commands = client.commands.map(command => command.data.toJSON());
-    const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
-
-    try {
-        await rest.put(
-            Routes.applicationCommands(client.user.id),
-            { body: commands },
-        );
-        console.log('Successfully registered application commands.');
-    } catch (error) {
-        console.error(error);
-    }
-
-    client.player = new PlayerManager(client, [
-        { host: process.env.LAVALINK_HOST, port: process.env.LAVALINK_PORT, password: process.env.LAVALINK_PASSWORD }
-    ], {
-        user: client.user.id,
-        shards: 1
-    });
-
-    console.log(`Logged in as ${client.user.tag}!`);
+// Ready event
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
 });
 
+// Interaction create event
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand()) return;
+  if (!interaction.isCommand()) return;
 
-    const command = client.commands.get(interaction.commandName);
+  const command = client.commands.get(interaction.commandName);
 
-    if (!command) return;
+  if (!command) return;
 
-    try {
-        await command.execute(interaction, client);
-    } catch (error) {
-        console.error(error);
-        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-    }
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+    await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+  }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+// Login to Discord with your app's token
+client.login('YOUR_TOKEN_HERE');
+
+// Set up an Express server
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Bot is running!');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
+});
