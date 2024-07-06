@@ -2,10 +2,10 @@ const { ActivityType } = require('discord.js');
 
 // Array of status messages
 const statusMessages = [
-  "No Skill Customs",
-  "Vehicle Works",
-  "Maps Works",
-  "Cinematics Works"
+  "ZyroniX",
+  "AKA ZyX",
+  "Bot Under Development",
+  "V1.3"
 ];
 
 let currentIndex = 0;
