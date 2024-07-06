@@ -2,7 +2,10 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-require('dotenv').config(); // Load environment variables from .env
+require('dotenv').config();
+
+// Import the setStatus function
+const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -24,6 +27,8 @@ for (const file of commandFiles) {
 // Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
+  // Set the bot's status
+  setStatus(client);
 });
 
 // Interaction create event
