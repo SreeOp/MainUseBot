@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+require('dotenv').config(); // Load environment variables from .env
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -41,8 +42,8 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Login to Discord with your app's token
-client.login('YOUR_TOKEN_HERE');
+// Login to Discord with your app's token from environment variables
+client.login(process.env.TOKEN);
 
 // Set up an Express server
 const app = express();
