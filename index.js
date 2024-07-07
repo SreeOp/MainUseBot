@@ -4,6 +4,21 @@ const path = require('path');
 const express = require('express');
 require('dotenv').config();
 
+// Check if all necessary environment variables are set
+if (!process.env.DISCORD_TOKEN) {
+  console.error('DISCORD_TOKEN is not set in .env file.');
+  process.exit(1);
+}
+
+if (!process.env.CLIENT_ID) {
+  console.error('CLIENT_ID is not set in .env file.');
+  process.exit(1);
+}
+
+if (!process.env.PORT) {
+  console.error('PORT is not set in .env file. Defaulting to 3000.');
+}
+
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
