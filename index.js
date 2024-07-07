@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const express = require('express'); // Ensure this line is present
+const express = require('express');
 require('dotenv').config();
 
 // Import the startStatusUpdate function
@@ -31,6 +31,25 @@ for (const file of commandFiles) {
   const command = require(filePath);
   client.commands.set(command.data.name, command);
 }
+
+// Deploy commands to Discord
+const { REST, Routes } = require('discord.js');
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+
+(async () => {
+  try {
+    console.log('Started refreshing application (/) commands.');
+
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: client.commands.map(cmd => cmd.data.toJSON()) },
+    );
+
+    console.log('Successfully reloaded application (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
+})();
 
 // Ready event
 client.once('ready', () => {
