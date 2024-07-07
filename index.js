@@ -8,7 +8,7 @@ require('dotenv').config();
 const startStatusUpdate = require('./functions/setStatus');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 // Initialize commands collection
 client.commands = new Collection();
