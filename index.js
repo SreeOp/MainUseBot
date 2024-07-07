@@ -1,13 +1,8 @@
-const { Client, GatewayIntentBits, Collection, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
 require('dotenv').config();
-
-// Verify that environment variables are loaded
-console.log('DISCORD_TOKEN:', process.env.DISCORD_TOKEN ? 'Loaded' : 'Not Loaded');
-console.log('CLIENT_ID:', process.env.CLIENT_ID ? 'Loaded' : 'Not Loaded');
-console.log('PORT:', process.env.PORT || 'Not Loaded');
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
@@ -53,13 +48,7 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Login to Discord with your app's token from environment variables
-client.login(process.env.DISCORD_TOKEN)
-  .then(() => {
-    console.log('Bot successfully logged in.');
-  })
-  .catch(error => {
-    console.error('Error logging in:', error);
-  });
+client.login(process.env.DISCORD_TOKEN);
 
 // Set up an Express server
 const app = express();
