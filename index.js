@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -28,7 +28,6 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
-const { REST, Routes } = require('discord.js');
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
