@@ -4,6 +4,11 @@ const path = require('path');
 const express = require('express');
 require('dotenv').config();
 
+// Verify that environment variables are loaded
+console.log('DISCORD_TOKEN:', process.env.DISCORD_TOKEN ? 'Loaded' : 'Not Loaded');
+console.log('CLIENT_ID:', process.env.CLIENT_ID ? 'Loaded' : 'Not Loaded');
+console.log('PORT:', process.env.PORT || 'Not Loaded');
+
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
