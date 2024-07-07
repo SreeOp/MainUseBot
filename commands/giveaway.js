@@ -21,7 +21,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setTitle('🎉 Giveaway! 🎉')
       .setDescription(`Prize: **${prize}**\nReact with 🎉 to enter!\nEnds in: **${duration}** seconds`)
-      .setColor('#00ff00');
+      .setColor(0x00ff00);
 
     const message = await interaction.reply({ embeds: [embed], fetchReply: true });
     
