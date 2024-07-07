@@ -1,11 +1,10 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const express = require('express');
 require('dotenv').config();
 
-// Import the setStatus function
-const setStatus = require('./functions/setStatus');
+// Import the startStatusUpdate function
+const startStatusUpdate = require('./functions/setStatus');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -17,7 +16,7 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-// Set commands to the collection
+// Register commands
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
@@ -27,8 +26,8 @@ for (const file of commandFiles) {
 // Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
-  // Set the bot's status
-  setStatus(client);
+  // Start updating the bot's status
+  startStatusUpdate(client);
 });
 
 // Interaction create event
@@ -47,7 +46,7 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Login to Discord with your app's token from environment variables
+// Login to Discord with your bot token
 client.login(process.env.DISCORD_TOKEN);
 
 // Set up an Express server
