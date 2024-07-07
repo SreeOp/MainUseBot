@@ -48,7 +48,7 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Login to Discord with your app's token from environment variables
-client.login(process.env.TOKEN);
+client.login(process.env.DISCORD_TOKEN);
 
 // Set up an Express server
 const app = express();
