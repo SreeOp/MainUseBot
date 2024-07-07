@@ -14,7 +14,11 @@ module.exports = {
     .addStringOption(option =>
       option.setName('message')
         .setDescription('Message to send')
-        .setRequired(true)),
+        .setRequired(true))
+    .addStringOption(option =>
+      option.setName('attachment')
+        .setDescription('URL of an attachment to include (optional)')
+        .setRequired(false)), // Make attachment optional
   async execute(interaction) {
     // Check if user has any of the allowed roles by ID
     const memberRoles = interaction.member.roles.cache;
@@ -26,9 +30,17 @@ module.exports = {
 
     const channel = interaction.options.getChannel('channel');
     const message = interaction.options.getString('message');
+    const attachmentUrl = interaction.options.getString('attachment');
 
     try {
-      await channel.send(message);
+      if (attachmentUrl) {
+        await channel.send({
+          content: message,
+          files: [attachmentUrl],
+        });
+      } else {
+        await channel.send(message);
+      }
       await interaction.reply({ content: 'Message sent!', ephemeral: true });
     } catch (error) {
       console.error(error);
@@ -36,4 +48,3 @@ module.exports = {
     }
   },
 };
-
