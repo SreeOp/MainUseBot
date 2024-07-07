@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActivityType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -48,7 +48,9 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Login to Discord with your app's token from environment variables
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN).catch(error => {
+  console.error('Error logging in:', error);
+});
 
 // Set up an Express server
 const app = express();
