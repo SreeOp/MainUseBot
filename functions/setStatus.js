@@ -22,7 +22,7 @@ module.exports = (client) => {
   }
 
   // Update status every 10 minutes (600000 ms)
-  setInterval(updateStatus, 15000);
+  setInterval(updateStatus, 600000);
 
   // Initial status set
   updateStatus();
