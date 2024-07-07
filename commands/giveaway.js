@@ -23,7 +23,8 @@ module.exports = {
       .setDescription(`Prize: **${prize}**\nReact with 🎉 to enter!\nEnds in: **${duration}** seconds`)
       .setColor(0x00ff00);
 
-    const message = await interaction.reply({ embeds: [embed], fetchReply: true });
+    await interaction.reply({ embeds: [embed], fetchReply: true });
+    const message = await interaction.fetchReply();
     
     await message.react('🎉');
 
@@ -42,7 +43,7 @@ module.exports = {
 
       const winner = filteredUsers.random();
 
-      interaction.followUp(`🎉 Congratulations ${winner}! You won the **${prize}**! 🎉`);
+      await interaction.followUp(`🎉 Congratulations ${winner}! You won the **${prize}**! 🎉`);
     }, duration * 1000);
   },
 };
