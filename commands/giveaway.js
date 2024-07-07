@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,10 +18,10 @@ module.exports = {
     const prize = interaction.options.getString('prize');
     const duration = interaction.options.getInteger('duration');
     
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setTitle('🎉 Giveaway! 🎉')
       .setDescription(`Prize: **${prize}**\nReact with 🎉 to enter!\nEnds in: **${duration}** seconds`)
-      .setColor('#BC13FE');
+      .setColor('#00ff00');
 
     const message = await interaction.reply({ embeds: [embed], fetchReply: true });
     
