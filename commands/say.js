@@ -36,7 +36,7 @@ module.exports = {
       if (attachmentUrl) {
         await channel.send({
           content: message,
-          files: [attachmentUrl],
+          files: [attachmentUrl], // Pass the attachment URL as an array
         });
       } else {
         await channel.send(message);
