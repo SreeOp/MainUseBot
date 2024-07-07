@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const express = require('express'); // Ensure this line is present
 require('dotenv').config();
 
 // Import the startStatusUpdate function
