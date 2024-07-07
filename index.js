@@ -1,55 +1,38 @@
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const config = require('./config'); // Import the config file
 require('dotenv').config();
 
-const startStatusUpdate = require('./functions/setStatus');
+// Import the setStatus function
+const setStatus = require('./functions/setStatus');
 
-const client = new Client({ 
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.DirectMessages
-  ]
-});
+// Create a new client instance
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+// Initialize commands collection
 client.commands = new Collection();
 
+// Command files
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
+// Set commands to the collection
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
   client.commands.set(command.data.name, command);
 }
 
-const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
-(async () => {
-  try {
-    console.log('Started refreshing application (/) commands.');
-
-    await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: client.commands.map(cmd => cmd.data.toJSON()) },
-    );
-
-    console.log('Successfully reloaded application (/) commands.');
-  } catch (error) {
-    console.error(error);
-  }
-})();
-
+// Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
-  startStatusUpdate(client);
+  // Set the bot's status
+  setStatus(client);
 });
 
+// Interaction create event
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
@@ -57,16 +40,29 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
+  const memberRoles = interaction.member.roles.cache;
+  const hasPermission = config.allowedRoles.some(role => memberRoles.has(role));
+
+  if (!hasPermission) {
+    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+  }
+
   try {
     await command.execute(interaction);
   } catch (error) {
     console.error(error);
-    await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+    if (!interaction.replied) {
+      await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+    } else {
+      await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
+    }
   }
 });
 
+// Login to Discord with your app's token from environment variables
 client.login(process.env.DISCORD_TOKEN);
 
+// Set up an Express server
 const app = express();
 const PORT = process.env.PORT || 3000;
 
