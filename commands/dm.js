@@ -3,10 +3,10 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('dm')
-    .setDescription('Send a DM to a user')
+    .setDescription('Send a direct message to a user')
     .addUserOption(option => 
       option.setName('target')
-        .setDescription('The user to send a DM to')
+        .setDescription('The user to send the message to')
         .setRequired(true))
     .addStringOption(option => 
       option.setName('message')
@@ -18,10 +18,10 @@ module.exports = {
 
     try {
       await targetUser.send(message);
-      await interaction.reply({ content: `Message sent to ${targetUser.tag}`, ephemeral: true });
+      await interaction.reply({ content: `Message sent to ${targetUser.username}`, ephemeral: true });
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: 'Failed to send the DM. The user might have DMs disabled.', ephemeral: true });
+      await interaction.reply({ content: 'There was an error sending the message.', ephemeral: true });
     }
   },
 };
