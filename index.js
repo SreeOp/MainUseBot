@@ -9,7 +9,7 @@ require('dotenv').config();
 const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.Members] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -56,19 +56,6 @@ client.on('interactionCreate', async interaction => {
     } else {
       await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
     }
-  }
-});
-
-// Guild member add event
-client.on('guildMemberAdd', async member => {
-  const { autorole } = config; // Get the autorole ID from config
-  if (!autorole) return;
-
-  try {
-    await member.roles.add(autorole);
-    console.log(`Added autorole to ${member.user.tag}`);
-  } catch (error) {
-    console.error(`Failed to add autorole to ${member.user.tag}:`, error);
   }
 });
 
