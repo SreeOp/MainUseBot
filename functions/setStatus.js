@@ -21,8 +21,8 @@ module.exports = (client) => {
     });
   }
 
-  // Update status every 10 minutes (600000 ms)
-  setInterval(updateStatus, 600000);
+  // Update status every 25 seconds (25000 ms)
+  setInterval(updateStatus, 25000);
 
   // Initial status set
   updateStatus();
