@@ -8,6 +8,9 @@ require('dotenv').config();
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
+// Import the deploy-commands.js file
+const deployCommands = require('./deploy-commands');
+
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -59,8 +62,11 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Login to Discord with your app's token from environment variables
-client.login(process.env.DISCORD_TOKEN);
+// Deploy commands
+deployCommands().then(() => {
+  // Login to Discord with your app's token from environment variables
+  client.login(process.env.DISCORD_TOKEN);
+}).catch(console.error);
 
 // Set up an Express server
 const app = express();
