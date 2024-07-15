@@ -16,9 +16,9 @@ module.exports = {
         .setDescription('Message to send')
         .setRequired(true))
     .addStringOption(option =>
-      option.setName('attachment')
-        .setDescription('URL of an attachment to include (optional)')
-        .setRequired(false)), // Make attachment optional
+      option.setName('image')
+        .setDescription('URL of an image to include (optional)')
+        .setRequired(false)), // Make image optional
   async execute(interaction) {
     // Check if user has any of the allowed roles by ID
     const memberRoles = interaction.member.roles.cache;
@@ -30,17 +30,14 @@ module.exports = {
 
     const channel = interaction.options.getChannel('channel');
     const message = interaction.options.getString('message');
-    const attachmentUrl = interaction.options.getString('attachment');
+    const imageUrl = interaction.options.getString('image');
 
     try {
-      if (attachmentUrl) {
-        await channel.send({
-          content: message,
-          files: [{ attachment: attachmentUrl }], // Pass the attachment URL as an array of objects
-        });
-      } else {
-        await channel.send(message);
+      const messageOptions = { content: message };
+      if (imageUrl) {
+        messageOptions.files = [imageUrl]; // Pass the image URL as an array
       }
+      await channel.send(messageOptions);
       await interaction.reply({ content: 'Message sent!', ephemeral: true });
     } catch (error) {
       console.error(error);
