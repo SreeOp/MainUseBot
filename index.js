@@ -1,21 +1,18 @@
-const { Client, GatewayIntentBits, Collection, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const config = require('./config'); // Import the config file
 require('dotenv').config();
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
+// Import the deploy-commands.js file
+const deployCommands = require('./deploy-commands');
+
 // Create a new client instance
-const client = new Client({ 
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences // Ensure this is included to fetch member presence status
-  ],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
-});
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -40,43 +37,36 @@ client.once('ready', () => {
 
 // Interaction create event
 client.on('interactionCreate', async interaction => {
-  if (interaction.isCommand()) {
-    const command = client.commands.get(interaction.commandName);
+  if (!interaction.isCommand()) return;
 
-    if (!command) return;
+  const command = client.commands.get(interaction.commandName);
 
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(error);
-      if (!interaction.replied) {
-        await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
-      } else {
-        await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
-      }
-    }
-  } else if (interaction.isButton()) {
-    if (interaction.customId === 'show_online_members') {
-      // Define the role ID you're checking for
-      const roleId = '1046786167644880946'; // Replace with actual role ID
+  if (!command) return;
 
-      // Fetch the members with the role
-      const membersWithRole = interaction.guild.roles.cache.get(roleId).members;
+  const memberRoles = interaction.member.roles.cache;
+  const hasPermission = config.allowedRoles.some(role => memberRoles.has(role));
 
-      // Filter members by online status
-      const onlineMembers = membersWithRole.filter(member => member.presence?.status === 'online');
+  if (!hasPermission) {
+    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+  }
 
-      // Prepare the list of online members
-      const onlineMemberList = onlineMembers.map(member => member.user.username).join('\n') || 'No online members found';
-
-      // Reply with the list of online members
-      await interaction.reply({ content: `**Online Members with the role:**\n${onlineMemberList}`, ephemeral: true });
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+    if (!interaction.replied) {
+      await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+    } else {
+      await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
     }
   }
 });
 
-// Login to Discord with your app's token from environment variables
-client.login(process.env.DISCORD_TOKEN);
+// Deploy commands
+deployCommands().then(() => {
+  // Login to Discord with your app's token from environment variables
+  client.login(process.env.DISCORD_TOKEN);
+}).catch(console.error);
 
 // Set up an Express server
 const app = express();
