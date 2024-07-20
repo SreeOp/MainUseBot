@@ -1,6 +1,6 @@
 const { REST, Routes } = require('discord.js');
-require('dotenv').config();
 const fs = require('fs');
+require('dotenv').config();
 
 const commands = [];
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -12,19 +12,12 @@ for (const file of commandFiles) {
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-module.exports = async () => {
-  const clientId = process.env.CLIENT_ID;
-  const guildId = process.env.GUILD_ID;
-
-  if (!clientId || !guildId) {
-    throw new Error('CLIENT_ID or GUILD_ID is not defined in the environment variables');
-  }
-
+(async () => {
   try {
     console.log('Started refreshing application (/) commands.');
 
     await rest.put(
-      Routes.applicationGuildCommands(clientId, guildId),
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
       { body: commands },
     );
 
@@ -32,4 +25,4 @@ module.exports = async () => {
   } catch (error) {
     console.error(error);
   }
-};
+})();
