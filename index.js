@@ -2,13 +2,15 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-require('dotenv').config(); // Load environment variables
+require('dotenv').config();
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
+// Import the autorole function
+const autorole = require('./functions/autorole');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -23,10 +25,6 @@ for (const file of commandFiles) {
   const command = require(filePath);
   client.commands.set(command.data.name, command);
 }
-
-// Deploy commands
-const deployCommands = require('./deploy-commands');
-deployCommands().catch(console.error);
 
 // Ready event
 client.once('ready', () => {
@@ -43,9 +41,8 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
-  // Check if ALLOWED_ROLES is defined
-  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
   const memberRoles = interaction.member.roles.cache;
+  const allowedRoles = process.env.ALLOWED_ROLES.split(',');
   const hasPermission = allowedRoles.some(role => memberRoles.has(role));
 
   if (!hasPermission) {
@@ -62,6 +59,11 @@ client.on('interactionCreate', async interaction => {
       await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
     }
   }
+});
+
+// Autorole function
+client.on('guildMemberAdd', async member => {
+  await autorole(client, member);
 });
 
 // Login to Discord with your app's token from environment variables
