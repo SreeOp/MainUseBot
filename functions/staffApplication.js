@@ -15,6 +15,11 @@ module.exports = async (client, interaction) => {
           { id: 'reason', label: 'Why do you want to be a staff member?' },
         ];
 
+        if (questions.length === 0) {
+          console.error('No questions found to add to the modal.');
+          return;
+        }
+
         const components = questions.map(question => new ActionRowBuilder().addComponents(
           new TextInputBuilder()
             .setCustomId(question.id)
@@ -22,6 +27,8 @@ module.exports = async (client, interaction) => {
             .setStyle(TextInputStyle.Short)
             .setRequired(true)
         ));
+
+        modal.setComponents(components);
 
         await interaction.showModal(modal);
       }
@@ -66,18 +73,30 @@ module.exports = async (client, interaction) => {
         await interaction.reply({ content: 'Thank you for your application! We will review it and get back to you soon.', ephemeral: true });
       }
     } else if (interaction.isButton()) {
-      if (interaction.customId === 'accept') {
-        const applicantId = interaction.message.embeds[0].fields.find(field => field.name === 'Name').value;
+      if (interaction.customId === 'accept' || interaction.customId === 'reject') {
+        const buttonType = interaction.customId;
+        const embed = interaction.message.embeds[0];
+        const applicantId = embed.fields.find(field => field.name === 'Name').value;
+
+        if (!applicantId) {
+          console.error('Applicant ID not found in the message embed.');
+          return;
+        }
+
         const applicant = await client.users.fetch(applicantId);
 
         if (applicant) {
           try {
-            await applicant.send('Your staff application has been accepted. Please come to the voice channel for further instructions.');
-            await interaction.update({ content: 'Application accepted and user notified!', components: [] });
+            if (buttonType === 'accept') {
+              await applicant.send('Your staff application has been accepted. Please come to the voice channel for further instructions.');
+              await interaction.update({ content: 'Application accepted and user notified!', components: [] });
+            } else if (buttonType === 'reject') {
+              await interaction.update({ content: 'Application rejected!', components: [] });
+            }
           } catch (dmError) {
             console.error('Failed to send DM:', dmError);
             if (!interaction.replied) {
-              await interaction.reply({ content: 'Application accepted, but failed to send DM.', ephemeral: true });
+              await interaction.reply({ content: 'Failed to notify the user.', ephemeral: true });
             }
           }
         } else {
@@ -86,8 +105,6 @@ module.exports = async (client, interaction) => {
             await interaction.reply({ content: 'Failed to accept the application. Applicant not found.', ephemeral: true });
           }
         }
-      } else if (interaction.customId === 'reject') {
-        await interaction.update({ content: 'Application rejected!', components: [] });
       }
     }
   } catch (error) {
