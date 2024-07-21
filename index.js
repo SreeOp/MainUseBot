@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -6,8 +6,6 @@ require('dotenv').config();
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
-// Import the autorole function
-const autorole = require('./functions/autorole');
 // Import the staff application function
 const staffApplication = require('./functions/staffApplication');
 
@@ -83,11 +81,6 @@ client.on('interactionCreate', async interaction => {
   } else if (interaction.isButton() || interaction.isModalSubmit()) {
     await staffApplication(client, interaction);
   }
-});
-
-// Autorole function
-client.on('guildMemberAdd', async member => {
-  await autorole(client, member);
 });
 
 // Login to Discord with your app's token from environment variables
