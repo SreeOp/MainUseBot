@@ -1,4 +1,4 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = async (client, interaction) => {
   if (interaction.isButton()) {
@@ -67,8 +67,19 @@ module.exports = async (client, interaction) => {
           )
           .setTimestamp();
 
+        const buttons = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('accept')
+            .setLabel('Accept')
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId('reject')
+            .setLabel('Reject')
+            .setStyle(ButtonStyle.Danger)
+        );
+
         try {
-          await logChannel.send({ embeds: [embed] });
+          await logChannel.send({ embeds: [embed], components: [buttons] });
         } catch (error) {
           console.error('Error sending log message:', error);
         }
@@ -81,6 +92,15 @@ module.exports = async (client, interaction) => {
       } catch (error) {
         console.error('Error sending reply:', error);
       }
+    }
+  } else if (interaction.isButton()) {
+    const logChannelId = process.env.LOG_CHANNEL_ID;
+    const logChannel = client.channels.cache.get(logChannelId);
+
+    if (logChannel && interaction.customId === 'accept') {
+      await interaction.update({ content: 'Application accepted!', components: [], embeds: [] });
+    } else if (logChannel && interaction.customId === 'reject') {
+      await interaction.update({ content: 'Application rejected!', components: [], embeds: [] });
     }
   }
 };
