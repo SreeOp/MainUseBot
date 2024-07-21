@@ -37,7 +37,13 @@ module.exports = async (client, interaction) => {
       });
 
       modal.addComponents(...components);
-      await interaction.showModal(modal);
+
+      try {
+        await interaction.showModal(modal);
+      } catch (error) {
+        console.error('Error showing modal:', error);
+        await interaction.reply({ content: 'There was an error showing the application form. Please try again later.', ephemeral: true });
+      }
     }
   } else if (interaction.isModalSubmit()) {
     if (interaction.customId === 'staffApplication') {
@@ -61,10 +67,20 @@ module.exports = async (client, interaction) => {
           )
           .setTimestamp();
 
-        await logChannel.send({ embeds: [embed] });
+        try {
+          await logChannel.send({ embeds: [embed] });
+        } catch (error) {
+          console.error('Error sending log message:', error);
+        }
+      } else {
+        console.error('Log channel not found.');
       }
 
-      await interaction.reply({ content: 'Thank you for your application! We will review it and get back to you soon.', ephemeral: true });
+      try {
+        await interaction.reply({ content: 'Thank you for your application! We will review it and get back to you soon.', ephemeral: true });
+      } catch (error) {
+        console.error('Error sending reply:', error);
+      }
     }
   }
 };
