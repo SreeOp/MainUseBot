@@ -79,7 +79,14 @@ client.on('interactionCreate', async interaction => {
       }
     }
   } else if (interaction.isButton() || interaction.isModalSubmit()) {
-    await staffApplication(client, interaction);
+    try {
+      await staffApplication(client, interaction);
+    } catch (error) {
+      console.error('Error handling interaction:', error);
+      if (!interaction.replied) {
+        await interaction.reply({ content: 'There was an error processing your request.', ephemeral: true });
+      }
+    }
   }
 });
 
