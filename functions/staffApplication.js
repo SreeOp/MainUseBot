@@ -38,7 +38,7 @@ module.exports = async (client, interaction) => {
         }
 
         const embed = message.embeds[0];
-        const submittedUserId = embed.fields.find(field => field.name === 'UserID')?.value || message.interaction?.user?.id;
+        const submittedUserId = embed.fields.find(field => field.name === 'UserID')?.value;
 
         if (!submittedUserId) {
           console.error('Submitted user ID not found.');
@@ -66,7 +66,7 @@ module.exports = async (client, interaction) => {
               .setDescription(`The application by <@${submittedUserId}> has been accepted.`)
               .setTimestamp();
 
-            await logChannel.send({ embeds: [followUpEmbed] });
+            await logChannel.send({ content: `<@${submittedUserId}>`, embeds: [followUpEmbed] });
           } else if (buttonType === 'reject') {
             // Update interaction message
             await interaction.update({ content: 'Application rejected!', components: [] });
@@ -78,7 +78,7 @@ module.exports = async (client, interaction) => {
               .setDescription(`The application by <@${submittedUserId}> has been rejected.`)
               .setTimestamp();
 
-            await logChannel.send({ embeds: [followUpEmbed] });
+            await logChannel.send({ content: `<@${submittedUserId}>`, embeds: [followUpEmbed] });
           }
         } catch (error) {
           console.error('Failed to update interaction or send follow-up message:', error);
