@@ -1,79 +1,70 @@
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = async (client, interaction) => {
-  if (interaction.customId === 'apply') {
-    const modal = new ModalBuilder()
-      .setCustomId('staffApplicationModal')
-      .setTitle('Staff Application');
+  if (interaction.isButton()) {
+    if (interaction.customId === 'apply') {
+      const modal = new ModalBuilder()
+        .setCustomId('staffApplication')
+        .setTitle('Staff Application');
 
-    const nameInput = new TextInputBuilder()
-      .setCustomId('name')
-      .setLabel('Your full name')
-      .setStyle(TextInputStyle.Short)
-      .setRequired(true);
+      const questions = [
+        {
+          id: 'name',
+          label: 'What is your name?',
+        },
+        {
+          id: 'age',
+          label: 'How old are you?',
+        },
+        {
+          id: 'experience',
+          label: 'Do you have any prior experience?',
+        },
+        {
+          id: 'reason',
+          label: 'Why do you want to be a staff member?',
+        },
+      ];
 
-    const ageInput = new TextInputBuilder()
-      .setCustomId('age')
-      .setLabel('Your age')
-      .setStyle(TextInputStyle.Short)
-      .setRequired(true);
+      const components = questions.map(question => {
+        return new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId(question.id)
+            .setLabel(question.label)
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+        );
+      });
 
-    const experienceInput = new TextInputBuilder()
-      .setCustomId('experience')
-      .setLabel('Your previous experience')
-      .setStyle(TextInputStyle.Paragraph)
-      .setRequired(true);
-
-    const reasonInput = new TextInputBuilder()
-      .setCustomId('reason')
-      .setLabel('Why you want to be a staff member')
-      .setStyle(TextInputStyle.Paragraph)
-      .setRequired(true);
-
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(nameInput),
-      new ActionRowBuilder().addComponents(ageInput),
-      new ActionRowBuilder().addComponents(experienceInput),
-      new ActionRowBuilder().addComponents(reasonInput)
-    );
-
-    await interaction.showModal(modal);
-  } else if (interaction.customId === 'staffApplicationModal') {
-    const name = interaction.fields.getTextInputValue('name');
-    const age = interaction.fields.getTextInputValue('age');
-    const experience = interaction.fields.getTextInputValue('experience');
-    const reason = interaction.fields.getTextInputValue('reason');
-
-    const logChannelId = process.env.STAFF_APPLICATION_CHANNEL_ID;
-
-    if (!logChannelId) {
-      console.error('Staff application log channel ID is not defined in the environment variables.');
-      return;
+      modal.addComponents(...components);
+      await interaction.showModal(modal);
     }
+  } else if (interaction.isModalSubmit()) {
+    if (interaction.customId === 'staffApplication') {
+      const name = interaction.fields.getTextInputValue('name');
+      const age = interaction.fields.getTextInputValue('age');
+      const experience = interaction.fields.getTextInputValue('experience');
+      const reason = interaction.fields.getTextInputValue('reason');
 
-    const logChannel = interaction.guild.channels.cache.get(logChannelId);
-    if (!logChannel) {
-      console.error('Staff application log channel not found.');
-      return;
-    }
+      const logChannelId = process.env.LOG_CHANNEL_ID;
+      const logChannel = client.channels.cache.get(logChannelId);
 
-    const embed = new EmbedBuilder()
-      .setTitle('New Staff Application')
-      .addFields(
-        { name: 'Name', value: name, inline: true },
-        { name: 'Age', value: age, inline: true },
-        { name: 'Experience', value: experience },
-        { name: 'Reason', value: reason }
-      )
-      .setColor('BLUE')
-      .setTimestamp();
+      if (logChannel) {
+        const embed = new EmbedBuilder()
+          .setTitle('New Staff Application')
+          .setColor('#00FF00') // Ensure the color is a valid hexadecimal color code
+          .addFields(
+            { name: 'Name', value: name, inline: true },
+            { name: 'Age', value: age, inline: true },
+            { name: 'Experience', value: experience, inline: false },
+            { name: 'Reason', value: reason, inline: false },
+          )
+          .setTimestamp();
 
-    try {
-      await logChannel.send({ embeds: [embed] });
-      await interaction.reply({ content: 'Your application has been submitted!', ephemeral: true });
-    } catch (error) {
-      console.error('Error logging staff application:', error);
-      await interaction.reply({ content: 'There was an error submitting your application.', ephemeral: true });
+        await logChannel.send({ embeds: [embed] });
+      }
+
+      await interaction.reply({ content: 'Thank you for your application! We will review it and get back to you soon.', ephemeral: true });
     }
   }
 };
