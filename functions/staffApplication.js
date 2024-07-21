@@ -28,7 +28,7 @@ module.exports = async (client, interaction) => {
 
         await interaction.showModal(modal);
       } else if (interaction.customId === 'accept' || interaction.customId === 'reject') {
-        // Handle the acceptance or rejection of the application
+        // Handle acceptance or rejection of the application
         const buttonType = interaction.customId;
         const message = interaction.message;
 
@@ -38,11 +38,10 @@ module.exports = async (client, interaction) => {
         }
 
         const embed = message.embeds[0];
-        const applicantIdField = embed.fields.find(field => field.name === 'Name');
-        const applicantId = applicantIdField ? applicantIdField.value : null;
+        const submittedUserId = message.interaction.user.id; // Extract submitted user ID
 
-        if (!applicantId) {
-          console.error('Applicant ID not found in the message embed.');
+        if (!submittedUserId) {
+          console.error('Submitted user ID not found in the message interaction.');
           return;
         }
 
@@ -57,22 +56,28 @@ module.exports = async (client, interaction) => {
 
         try {
           if (buttonType === 'accept') {
+            // Update interaction message
             await interaction.update({ content: 'Application accepted!', components: [] });
+
             // Send follow-up message to the log channel
             const followUpEmbed = new EmbedBuilder()
               .setTitle('Application Accepted')
               .setColor('#00FF00')
-              .setDescription(`The application by <@${applicantId}> has been accepted.`)
+              .setDescription(`The application by <@${submittedUserId}> has been accepted.`)
               .setTimestamp();
+
             await logChannel.send({ embeds: [followUpEmbed] });
           } else if (buttonType === 'reject') {
+            // Update interaction message
             await interaction.update({ content: 'Application rejected!', components: [] });
+
             // Send follow-up message to the log channel
             const followUpEmbed = new EmbedBuilder()
               .setTitle('Application Rejected')
               .setColor('#FF0000')
-              .setDescription(`The application by <@${applicantId}> has been rejected.`)
+              .setDescription(`The application by <@${submittedUserId}> has been rejected.`)
               .setTimestamp();
+
             await logChannel.send({ embeds: [followUpEmbed] });
           }
         } catch (error) {
