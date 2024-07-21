@@ -98,7 +98,19 @@ module.exports = async (client, interaction) => {
     const logChannel = client.channels.cache.get(logChannelId);
 
     if (logChannel && interaction.customId === 'accept') {
-      await interaction.update({ content: 'Application accepted!', components: [], embeds: [] });
+      const applicantId = interaction.message.embeds[0].fields[0].value; // Assuming the user's ID is stored in the first field
+
+      const applicant = await client.users.fetch(applicantId);
+      if (applicant) {
+        const notifyChannelId = process.env.NOTIFY_CHANNEL_ID;
+        const notifyChannel = client.channels.cache.get(notifyChannelId);
+
+        if (notifyChannel) {
+          await notifyChannel.send(`@${applicant.tag} Your Staff Application Is Pending Now, Come To VC For Approval`);
+        }
+
+        await interaction.update({ content: 'Application accepted!', components: [], embeds: [] });
+      }
     } else if (logChannel && interaction.customId === 'reject') {
       await interaction.update({ content: 'Application rejected!', components: [], embeds: [] });
     }
