@@ -95,24 +95,32 @@ module.exports = async (client, interaction) => {
     }
   } else if (interaction.isButton()) {
     const logChannelId = process.env.LOG_CHANNEL_ID;
-    const logChannel = client.channels.cache.get(logChannelId);
+    const notifyChannelId = process.env.NOTIFY_CHANNEL_ID;
+    const notifyChannel = client.channels.cache.get(notifyChannelId);
 
-    if (logChannel && interaction.customId === 'accept') {
+    if (interaction.customId === 'accept') {
       const applicantId = interaction.message.embeds[0].fields[0].value; // Assuming the user's ID is stored in the first field
 
       const applicant = await client.users.fetch(applicantId);
-      if (applicant) {
-        const notifyChannelId = process.env.NOTIFY_CHANNEL_ID;
-        const notifyChannel = client.channels.cache.get(notifyChannelId);
-
-        if (notifyChannel) {
+      if (applicant && notifyChannel) {
+        try {
           await notifyChannel.send(`@${applicant.tag} Your Staff Application Is Pending Now, Come To VC For Approval`);
+          await interaction.update({ content: 'Application accepted!', components: [], embeds: [] });
+        } catch (error) {
+          console.error('Error updating interaction:', error);
+          await interaction.reply({ content: 'Failed to accept the application. Please try again later.', ephemeral: true });
         }
-
-        await interaction.update({ content: 'Application accepted!', components: [], embeds: [] });
+      } else {
+        console.error('Applicant or notify channel not found.');
+        await interaction.reply({ content: 'Failed to accept the application. Please try again later.', ephemeral: true });
       }
-    } else if (logChannel && interaction.customId === 'reject') {
-      await interaction.update({ content: 'Application rejected!', components: [], embeds: [] });
+    } else if (interaction.customId === 'reject') {
+      try {
+        await interaction.update({ content: 'Application rejected!', components: [], embeds: [] });
+      } catch (error) {
+        console.error('Error updating interaction:', error);
+        await interaction.reply({ content: 'Failed to reject the application. Please try again later.', ephemeral: true });
+      }
     }
   }
 };
