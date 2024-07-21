@@ -23,8 +23,6 @@ module.exports = async (client, interaction) => {
             .setRequired(true)
         ));
 
-        modal.addComponents(...components);
-
         await interaction.showModal(modal);
       }
     } else if (interaction.isModalSubmit()) {
@@ -68,25 +66,25 @@ module.exports = async (client, interaction) => {
         await interaction.reply({ content: 'Thank you for your application! We will review it and get back to you soon.', ephemeral: true });
       }
     } else if (interaction.isButton()) {
-      const notifyChannelId = process.env.NOTIFY_CHANNEL_ID;
-      const notifyChannel = client.channels.cache.get(notifyChannelId);
-
       if (interaction.customId === 'accept') {
         const applicantId = interaction.message.embeds[0].fields.find(field => field.name === 'Name').value;
         const applicant = await client.users.fetch(applicantId);
 
         if (applicant) {
-          // Send DM to the applicant
           try {
             await applicant.send('Your staff application has been accepted. Please come to the voice channel for further instructions.');
             await interaction.update({ content: 'Application accepted and user notified!', components: [] });
           } catch (dmError) {
             console.error('Failed to send DM:', dmError);
-            await interaction.update({ content: 'Application accepted, but failed to send DM.', components: [] });
+            if (!interaction.replied) {
+              await interaction.reply({ content: 'Application accepted, but failed to send DM.', ephemeral: true });
+            }
           }
         } else {
           console.error('Applicant not found.');
-          await interaction.reply({ content: 'Failed to accept the application. Applicant not found.', ephemeral: true });
+          if (!interaction.replied) {
+            await interaction.reply({ content: 'Failed to accept the application. Applicant not found.', ephemeral: true });
+          }
         }
       } else if (interaction.customId === 'reject') {
         await interaction.update({ content: 'Application rejected!', components: [] });
