@@ -38,10 +38,10 @@ module.exports = async (client, interaction) => {
         }
 
         const embed = message.embeds[0];
-        const submittedUserId = message.interaction.user.id; // Extract submitted user ID
+        const submittedUserId = embed.fields.find(field => field.name === 'UserID')?.value || message.interaction?.user?.id;
 
         if (!submittedUserId) {
-          console.error('Submitted user ID not found in the message interaction.');
+          console.error('Submitted user ID not found.');
           return;
         }
 
@@ -92,6 +92,7 @@ module.exports = async (client, interaction) => {
         const age = interaction.fields.getTextInputValue('age');
         const experience = interaction.fields.getTextInputValue('experience');
         const reason = interaction.fields.getTextInputValue('reason');
+        const submittedUserId = interaction.user.id;
 
         const logChannelId = process.env.LOG_CHANNEL_ID;
         const logChannel = client.channels.cache.get(logChannelId);
@@ -109,7 +110,8 @@ module.exports = async (client, interaction) => {
             { name: 'Name', value: name, inline: true },
             { name: 'Age', value: age, inline: true },
             { name: 'Experience', value: experience, inline: false },
-            { name: 'Reason', value: reason, inline: false }
+            { name: 'Reason', value: reason, inline: false },
+            { name: 'UserID', value: submittedUserId, inline: false }
           )
           .setTimestamp();
 
