@@ -4,6 +4,7 @@ module.exports = async (client, interaction) => {
   try {
     if (interaction.isButton()) {
       if (interaction.customId === 'apply') {
+        // Handle the application modal
         const modal = new ModalBuilder()
           .setCustomId('staffApplication')
           .setTitle('Staff Application');
@@ -14,11 +15,6 @@ module.exports = async (client, interaction) => {
           { id: 'experience', label: 'Do you have any prior experience?' },
           { id: 'reason', label: 'Why do you want to be a staff member?' },
         ];
-
-        if (questions.length === 0) {
-          console.error('No questions found to add to the modal.');
-          return;
-        }
 
         const components = questions.map(question => new ActionRowBuilder().addComponents(
           new TextInputBuilder()
@@ -31,9 +27,62 @@ module.exports = async (client, interaction) => {
         modal.setComponents(components);
 
         await interaction.showModal(modal);
+      } else if (interaction.customId === 'accept' || interaction.customId === 'reject') {
+        // Handle the acceptance or rejection of the application
+        const buttonType = interaction.customId;
+        const message = interaction.message;
+
+        if (!message.embeds.length) {
+          console.error('No embed found in the interaction message.');
+          return;
+        }
+
+        const embed = message.embeds[0];
+        const applicantIdField = embed.fields.find(field => field.name === 'Name');
+        const applicantId = applicantIdField ? applicantIdField.value : null;
+
+        if (!applicantId) {
+          console.error('Applicant ID not found in the message embed.');
+          return;
+        }
+
+        const logChannelId = process.env.LOG_CHANNEL_ID;
+        const logChannel = client.channels.cache.get(logChannelId);
+
+        if (!logChannel) {
+          console.error('Log channel not found.');
+          await interaction.reply({ content: 'Failed to process the application. Log channel not found.', ephemeral: true });
+          return;
+        }
+
+        try {
+          if (buttonType === 'accept') {
+            await interaction.update({ content: 'Application accepted!', components: [] });
+            // Send follow-up message to the log channel
+            const followUpEmbed = new EmbedBuilder()
+              .setTitle('Application Accepted')
+              .setColor('#00FF00')
+              .setDescription(`The application by <@${applicantId}> has been accepted.`)
+              .setTimestamp();
+            await logChannel.send({ embeds: [followUpEmbed] });
+          } else if (buttonType === 'reject') {
+            await interaction.update({ content: 'Application rejected!', components: [] });
+            // Send follow-up message to the log channel
+            const followUpEmbed = new EmbedBuilder()
+              .setTitle('Application Rejected')
+              .setColor('#FF0000')
+              .setDescription(`The application by <@${applicantId}> has been rejected.`)
+              .setTimestamp();
+            await logChannel.send({ embeds: [followUpEmbed] });
+          }
+        } catch (error) {
+          console.error('Failed to update interaction or send follow-up message:', error);
+          await interaction.reply({ content: 'Failed to process the application.', ephemeral: true });
+        }
       }
     } else if (interaction.isModalSubmit()) {
       if (interaction.customId === 'staffApplication') {
+        // Handle modal submission
         const name = interaction.fields.getTextInputValue('name');
         const age = interaction.fields.getTextInputValue('age');
         const experience = interaction.fields.getTextInputValue('experience');
@@ -42,69 +91,36 @@ module.exports = async (client, interaction) => {
         const logChannelId = process.env.LOG_CHANNEL_ID;
         const logChannel = client.channels.cache.get(logChannelId);
 
-        if (logChannel) {
-          const embed = new EmbedBuilder()
-            .setTitle('New Staff Application')
-            .setColor('#00FF00') // Ensure the color is a valid hexadecimal color code
-            .addFields(
-              { name: 'Name', value: name, inline: true },
-              { name: 'Age', value: age, inline: true },
-              { name: 'Experience', value: experience, inline: false },
-              { name: 'Reason', value: reason, inline: false }
-            )
-            .setTimestamp();
-
-          const buttons = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setCustomId('accept')
-              .setLabel('Accept')
-              .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
-              .setCustomId('reject')
-              .setLabel('Reject')
-              .setStyle(ButtonStyle.Danger)
-          );
-
-          await logChannel.send({ embeds: [embed], components: [buttons] });
-        } else {
+        if (!logChannel) {
           console.error('Log channel not found.');
-        }
-
-        await interaction.reply({ content: 'Thank you for your application! We will review it and get back to you soon.', ephemeral: true });
-      }
-    } else if (interaction.isButton()) {
-      if (interaction.customId === 'accept' || interaction.customId === 'reject') {
-        const buttonType = interaction.customId;
-        const embed = interaction.message.embeds[0];
-        const applicantId = embed.fields.find(field => field.name === 'Name').value;
-
-        if (!applicantId) {
-          console.error('Applicant ID not found in the message embed.');
+          await interaction.reply({ content: 'Failed to submit application. Log channel not found.', ephemeral: true });
           return;
         }
 
-        const applicant = await client.users.fetch(applicantId);
+        const embed = new EmbedBuilder()
+          .setTitle('New Staff Application')
+          .setColor('#00FF00')
+          .addFields(
+            { name: 'Name', value: name, inline: true },
+            { name: 'Age', value: age, inline: true },
+            { name: 'Experience', value: experience, inline: false },
+            { name: 'Reason', value: reason, inline: false }
+          )
+          .setTimestamp();
 
-        if (applicant) {
-          try {
-            if (buttonType === 'accept') {
-              await applicant.send('Your staff application has been accepted. Please come to the voice channel for further instructions.');
-              await interaction.update({ content: 'Application accepted and user notified!', components: [] });
-            } else if (buttonType === 'reject') {
-              await interaction.update({ content: 'Application rejected!', components: [] });
-            }
-          } catch (dmError) {
-            console.error('Failed to send DM:', dmError);
-            if (!interaction.replied) {
-              await interaction.reply({ content: 'Failed to notify the user.', ephemeral: true });
-            }
-          }
-        } else {
-          console.error('Applicant not found.');
-          if (!interaction.replied) {
-            await interaction.reply({ content: 'Failed to accept the application. Applicant not found.', ephemeral: true });
-          }
-        }
+        const buttons = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('accept')
+            .setLabel('Accept')
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId('reject')
+            .setLabel('Reject')
+            .setStyle(ButtonStyle.Danger)
+        );
+
+        await logChannel.send({ embeds: [embed], components: [buttons] });
+        await interaction.reply({ content: 'Thank you for your application! We will review it and get back to you soon.', ephemeral: true });
       }
     }
   } catch (error) {
