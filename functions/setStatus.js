@@ -18,7 +18,7 @@ module.exports = (client) => {
       const guild = client.guilds.cache.first();
       if (guild) {
         const memberCount = guild.memberCount;
-        currentStatus.name = `Watching ${memberCount} members`;
+        currentStatus.name = `${memberCount} members`;
       }
     }
 
