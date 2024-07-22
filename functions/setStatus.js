@@ -5,7 +5,7 @@ const statusMessages = [
   { name: "Zyronix", type: ActivityType.Playing },
   { name: "You !", type: ActivityType.Watching },
   { name: "Bot Under Development", type: ActivityType.Listening },
-  { name: "V1.3", type: ActivityType.Streaming }
+  { name: "https://youtube.com/@zyronix_7?si=7azLhT_KRCivkXuw", type: ActivityType.Streaming }
 ];
 
 let currentIndex = 0;
