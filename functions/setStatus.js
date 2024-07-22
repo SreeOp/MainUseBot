@@ -1,11 +1,11 @@
 const { ActivityType } = require('discord.js');
 
-// Array of status messages
+// Array of status messages with their types
 const statusMessages = [
-  "ZyroniX",
-  "AKA ZyX",
-  "Bot Under Development",
-  "V1.3"
+  { name: "Zyronix", type: ActivityType.Playing },
+  { name: "You !", type: ActivityType.Watching },
+  { name: "Bot Under Development", type: ActivityType.Listening },
+  { name: "V1.3", type: ActivityType.Streaming }
 ];
 
 let currentIndex = 0;
@@ -16,8 +16,8 @@ module.exports = (client) => {
     currentIndex = (currentIndex + 1) % statusMessages.length;
 
     client.user.setPresence({
-      activities: [{ name: currentStatus, type: ActivityType.Custom }],
-      status: 'dnd',
+      activities: [{ name: currentStatus.name, type: currentStatus.type }],
+      status: 'dnd', // You can set this to 'online', 'idle', or 'invisible' as needed
     });
   }
 
