@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, 
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const { exec } = require('child_process');
 require('dotenv').config();
 
 // Import the setStatus function
@@ -29,26 +30,22 @@ for (const file of commandFiles) {
 // Ready event
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
+
+  // Deploy commands
+  exec('node deploy-commands.js', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error deploying commands: ${error.message}`);
+      return;
+    }
+    if (stderr) {
+      console.error(`Error output: ${stderr}`);
+      return;
+    }
+    console.log(`Deploy Commands Output: ${stdout}`);
+  });
+
   // Set the bot's status
   setStatus(client);
-
-  // Send the application message
-  const applyChannelId = process.env.APPLY_CHANNEL_ID;
-  const applyChannel = client.channels.cache.get(applyChannelId);
-
-  if (applyChannel) {
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('apply')
-        .setLabel('Apply for Staff')
-        .setStyle(ButtonStyle.Primary)
-    );
-
-    await applyChannel.send({
-      content: 'Click the button below to apply for a staff position.',
-      components: [row],
-    });
-  }
 });
 
 // Interaction create event
