@@ -52,37 +52,30 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand() && !interaction.isButton() && !interaction.isModalSubmit()) return;
 
-  if (interaction.isCommand()) {
-    const command = client.commands.get(interaction.commandName);
+  try {
+    if (interaction.isCommand()) {
+      const command = client.commands.get(interaction.commandName);
 
-    if (!command) return;
+      if (!command) return;
 
-    const memberRoles = interaction.member.roles.cache;
-    const allowedRoles = process.env.ALLOWED_ROLES.split(',');
-    const hasPermission = allowedRoles.some(role => memberRoles.has(role));
+      const memberRoles = interaction.member.roles.cache;
+      const allowedRoles = process.env.ALLOWED_ROLES.split(',');
+      const hasPermission = allowedRoles.some(role => memberRoles.has(role));
 
-    if (!hasPermission) {
-      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-    }
+      if (!hasPermission) {
+        return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+      }
 
-    try {
       await command.execute(interaction);
-    } catch (error) {
-      console.error(error);
-      if (!interaction.replied) {
-        await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
-      } else {
-        await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
-      }
-    }
-  } else if (interaction.isButton() || interaction.isModalSubmit()) {
-    try {
+    } else if (interaction.isButton() || interaction.isModalSubmit()) {
       await staffApplication(client, interaction);
-    } catch (error) {
-      console.error('Error handling interaction:', error);
-      if (!interaction.replied) {
-        await interaction.reply({ content: 'There was an error processing your request.', ephemeral: true });
-      }
+    }
+  } catch (error) {
+    console.error('Error handling interaction:', error);
+    if (!interaction.replied) {
+      await interaction.reply({ content: 'There was an error processing your request.', ephemeral: true });
+    } else if (!interaction.deferred) {
+      await interaction.followUp({ content: 'There was an error processing your request.', ephemeral: true });
     }
   }
 });
