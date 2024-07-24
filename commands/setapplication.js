@@ -9,6 +9,8 @@ module.exports = {
         .setDescription('Channel to send the application form')
         .setRequired(true)),
   async execute(interaction) {
+    await interaction.deferReply(); // Acknowledge the interaction
+
     const channel = interaction.options.getChannel('channel');
 
     const row = new ActionRowBuilder()
@@ -33,15 +35,13 @@ module.exports = {
         components: [row]
       });
 
-      if (!interaction.replied) {
-        await interaction.reply({ content: 'Application setup complete!', ephemeral: true });
-      }
+      // Send the final response after processing
+      await interaction.editReply({ content: 'Application setup complete!' });
     } catch (error) {
       console.error('Error sending setup message:', error);
 
-      if (!interaction.replied) {
-        await interaction.reply({ content: 'Failed to set up the application.', ephemeral: true });
-      }
+      // Send the final response if there was an error
+      await interaction.editReply({ content: 'Failed to set up the application.' });
     }
   },
 };
