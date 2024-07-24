@@ -1,27 +1,39 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
+const { MessageActionRow, MessageButton } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('setapplication')
-    .setDescription('Set up the application menu in the current channel'),
+    .setDescription('Set up the application menu in a specified channel')
+    .addChannelOption(option =>
+      option.setName('channel')
+        .setDescription('Channel to set up the application menu')
+        .setRequired(true)),
   async execute(interaction) {
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('ems')
-        .setLabel('EMS')
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId('pd')
-        .setLabel('PD')
-        .setStyle(ButtonStyle.Primary)
-    );
+    const channel = interaction.options.getChannel('channel');
 
-    await interaction.channel.send({
-      content: 'Select Job Application:',
-      components: [row]
+    // Create the application menu
+    const row = new MessageActionRow()
+      .addComponents(
+        new MessageButton()
+          .setCustomId('apply_staff')
+          .setLabel('Apply for Staff')
+          .setStyle('PRIMARY'),
+        new MessageButton()
+          .setCustomId('apply_vehicle')
+          .setLabel('Apply for Vehicle Developer')
+          .setStyle('PRIMARY'),
+        new MessageButton()
+          .setCustomId('apply_developer')
+          .setLabel('Apply for Developer')
+          .setStyle('PRIMARY')
+      );
+
+    await channel.send({
+      content: 'Click the button below to apply for a role:',
+      components: [row],
     });
 
-    await interaction.reply({ content: 'Application menu has been set up!', ephemeral: true });
-  }
+    await interaction.reply({ content: 'Application menu set up successfully!', ephemeral: true });
+  },
 };
