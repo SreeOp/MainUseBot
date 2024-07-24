@@ -1,4 +1,6 @@
-const { Client, GatewayIntentBits, Collection, ButtonBuilder, ActionRowBuilder, MessageActionRow, MessageButton, InteractionType } = require('discord.js');
+// index.js
+
+const { Client, GatewayIntentBits, Collection, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -66,46 +68,27 @@ client.on('interactionCreate', async interaction => {
 
   // Handle button interactions
   if (interaction.isButton()) {
-    const user = interaction.user;
-    const dmChannel = await user.createDM();
-    const questionQueue = [
-      "What is your name?",
-      "What position are you applying for?",
-      "Why do you want this position?",
-    ];
+    const applicationType = interaction.customId.split('_')[1]; // Assuming customId contains the type
+    const questions = config.questions[applicationType];
 
-    let questionIndex = 0;
+    if (!questions) {
+      return interaction.reply({ content: 'Unknown application type.', ephemeral: true });
+    }
 
-    // Send the first question
-    await dmChannel.send(questionQueue[questionIndex]);
-
-    const collector = dmChannel.createMessageCollector({ time: 60000 }); // Collect messages for 1 minute
-    const answers = [];
-
-    collector.on('collect', message => {
-      if (message.author.id !== user.id) return; // Ignore messages from others
-
-      answers.push(message.content);
-      questionIndex += 1;
-
-      if (questionIndex < questionQueue.length) {
-        // Send next question
-        dmChannel.send(questionQueue[questionIndex]);
-      } else {
-        // All questions answered
-        collector.stop();
+    // Send questions via DM
+    try {
+      await interaction.user.send(`You have selected the ${applicationType} application. Please answer the following questions:\n`);
+      
+      for (const question of questions) {
+        await interaction.user.send(question);
       }
-    });
 
-    collector.on('end', collected => {
-      // Send collected answers to the designated channel
-      const logChannel = client.channels.cache.get(config.logChannelId); // Set this in your config
-      if (logChannel) {
-        logChannel.send(`Application from ${user.tag}:\n\n${answers.join('\n')}`);
-      }
-    });
-
-    await interaction.reply({ content: 'I have sent you a DM with the questions.', ephemeral: true });
+      // Confirm receipt of the questions
+      await interaction.reply({ content: 'I have sent you the questions in DM. Please reply there.', ephemeral: true });
+    } catch (error) {
+      console.error('Failed to send DM:', error);
+      await interaction.reply({ content: 'I was unable to send you the questions. Please make sure you have DMs enabled.', ephemeral: true });
+    }
   }
 });
 
