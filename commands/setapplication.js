@@ -1,30 +1,25 @@
-// commands/setapplication.js
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('setapplication')
-    .setDescription('Set the application form in the current channel'),
+    .setDescription('Set up the job application buttons.'),
   async execute(interaction) {
-    const row = new ActionRowBuilder()
-      .addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId('selectJob')
-          .setPlaceholder('Select Job Application')
-          .addOptions([
-            {
-              label: 'Staff',
-              description: 'Support Staff',
-              value: 'staff',
-            },
-            {
-              label: 'Vehicle Developer',
-              description: 'Vehicle Artist',
-              value: 'vd',
-            },
-          ]),
-      );
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('apply_ems')
+        .setLabel('EMS')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('apply_pd')
+        .setLabel('PD')
+        .setStyle(ButtonStyle.Primary)
+    );
 
-    await interaction.reply({ content: 'Job Applications:', components: [row] });
+    await interaction.reply({
+      content: 'Click the button below to apply for a staff position.',
+      components: [row],
+    });
   },
 };
