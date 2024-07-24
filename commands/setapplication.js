@@ -27,11 +27,15 @@ module.exports = {
           .setStyle('PRIMARY')
       );
 
-    await channel.send({
-      content: 'Click a button to start your application:',
-      components: [row]
-    });
-
-    await interaction.reply({ content: 'Application setup complete!', ephemeral: true });
+    try {
+      await channel.send({
+        content: 'Click a button to start your application:',
+        components: [row]
+      });
+      await interaction.reply({ content: 'Application setup complete!', ephemeral: true });
+    } catch (error) {
+      console.error('Error sending setup message:', error);
+      await interaction.reply({ content: 'Failed to set up the application.', ephemeral: true });
+    }
   },
 };
