@@ -2,7 +2,6 @@ const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, 
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const { exec } = require('child_process');
 require('dotenv').config();
 
 // Import the setStatus function
@@ -11,7 +10,7 @@ const setStatus = require('./functions/setStatus');
 const staffApplication = require('./functions/staffApplication');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -32,17 +31,7 @@ client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   // Deploy commands
-  exec('node deploy-commands.js', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error deploying commands: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Error output: ${stderr}`);
-      return;
-    }
-    console.log(`Deploy Commands Output: ${stdout}`);
-  });
+  require('./deploy-commands');
 
   // Set the bot's status
   setStatus(client);
@@ -67,7 +56,7 @@ client.on('interactionCreate', async interaction => {
       }
 
       await command.execute(interaction);
-    } else if (interaction.isButton() || interaction.isModalSubmit()) {
+    } else if (interaction.isButton()) {
       await staffApplication(client, interaction);
     }
   } catch (error) {
