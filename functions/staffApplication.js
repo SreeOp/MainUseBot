@@ -2,56 +2,66 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBui
 
 module.exports = async (client, interaction) => {
   if (interaction.isButton()) {
-    let modal;
-    if (interaction.customId === 'apply_ems') {
-      modal = new ModalBuilder()
-        .setCustomId('ems_application')
-        .setTitle('EMS Application')
-        .addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('question1')
-              .setLabel('Why do you want to join EMS?')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
-    } else if (interaction.customId === 'apply_pd') {
-      modal = new ModalBuilder()
-        .setCustomId('pd_application')
-        .setTitle('PD Application')
-        .addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('question1')
-              .setLabel('Why do you want to join PD?')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
-    }
-    await interaction.showModal(modal);
-  } else if (interaction.isModalSubmit()) {
-    const answer = interaction.fields.getTextInputValue('question1');
-    const applicationChannelId = process.env.APPLICATION_CHANNEL_ID;
-    const applicationChannel = client.channels.cache.get(applicationChannelId);
-
-    if (applicationChannel) {
+    if (interaction.customId === 'apply') {
+      // Show job application menu
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId('accept_application')
-          .setLabel('Accept')
-          .setStyle(ButtonStyle.Success),
+          .setCustomId('ems')
+          .setLabel('EMS')
+          .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
-          .setCustomId('reject_application')
-          .setLabel('Reject')
-          .setStyle(ButtonStyle.Danger)
+          .setCustomId('pd')
+          .setLabel('PD')
+          .setStyle(ButtonStyle.Primary)
       );
 
-      await applicationChannel.send({
-        content: `New application from ${interaction.user.tag}\n**Answer:** ${answer}`,
+      await interaction.reply({
+        content: 'Select Job Application:',
         components: [row],
+        ephemeral: true
       });
+    } else if (interaction.customId === 'ems' || interaction.customId === 'pd') {
+      const questions = interaction.customId === 'ems' ? [
+        { question: 'Why do you want to join the EMS?', customId: 'q1' },
+        { question: 'What experience do you have?', customId: 'q2' },
+      ] : [
+        { question: 'Why do you want to join the PD?', customId: 'q1' },
+        { question: 'What experience do you have?', customId: 'q2' },
+      ];
 
-      await interaction.reply({ content: 'Application submitted!', ephemeral: true });
+      for (const { question, customId } of questions) {
+        const modal = new ModalBuilder()
+          .setCustomId(`modal_${customId}`)
+          .setTitle('Job Application')
+          .addComponents(
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId(customId)
+                .setLabel(question)
+                .setStyle(TextInputStyle.Paragraph)
+            )
+          );
+
+        await interaction.showModal(modal);
+      }
     }
+  } else if (interaction.isModalSubmit()) {
+    const channelId = process.env.APPLICATIONS_CHANNEL_ID;
+    const applicationChannel = client.channels.cache.get(channelId);
+
+    const answers = [];
+    for (const component of interaction.components) {
+      const input = component.components[0];
+      answers.push(`${input.label}: ${interaction.fields.getTextInputValue(input.customId)}`);
+    }
+
+    const applicantId = interaction.user.id;
+    const applicantTag = interaction.user.tag;
+
+    await applicationChannel.send({
+      content: `New application submitted by <@${applicantId}> (${applicantTag}):\n\n${answers.join('\n')}`
+    });
+
+    await interaction.reply({ content: 'Application submitted!', ephemeral: true });
   }
 };
