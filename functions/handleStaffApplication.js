@@ -1,29 +1,20 @@
-const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const { MessageEmbed } = require('discord.js');
+const config = require('../config'); // Import config
 
-const questions = [
-  'What Is Your Name?',
-  'Age',
-  'Experience'
-];
+const questions = config.questions.apply;
 
 module.exports = async (client, interaction) => {
-  // Ensure the interaction is a command
   if (!interaction.isCommand()) return;
 
   const command = interaction.commandName;
 
   if (command === 'apply') {
-    // Send questions to the user
     let currentQuestion = 0;
-    const filter = response => {
-      return response.author.id === interaction.user.id;
-    };
-
+    const filter = response => response.author.id === interaction.user.id;
     const collector = interaction.channel.createMessageCollector({ filter, time: 60000 });
 
     await interaction.reply('I will now ask you a series of questions. Please respond to each one.');
 
-    // Ask the first question
     const askQuestion = async () => {
       if (currentQuestion < questions.length) {
         await interaction.followUp(questions[currentQuestion]);
@@ -34,9 +25,9 @@ module.exports = async (client, interaction) => {
 
     askQuestion();
 
-    collector.on('collect', async response => {
-      const userAnswers = [];
+    const userAnswers = [];
 
+    collector.on('collect', async response => {
       if (currentQuestion < questions.length) {
         userAnswers[currentQuestion] = response.content;
         currentQuestion++;
@@ -44,7 +35,7 @@ module.exports = async (client, interaction) => {
           await askQuestion();
         } else {
           collector.stop();
-          // Create an embed with the user's responses
+
           const answersEmbed = new MessageEmbed()
             .setTitle('Staff Application')
             .setDescription(`Here are the responses from ${interaction.user.tag}:`)
@@ -55,10 +46,9 @@ module.exports = async (client, interaction) => {
             )
             .setColor('#0099ff');
 
-          // Send the responses to a designated channel
-          const applicationChannelId = process.env.APPLICATION_CHANNEL_ID; // Define in .env file
+          const applicationChannelId = config.applicationChannelId; // Get the application channel ID from config
           const applicationChannel = await client.channels.fetch(applicationChannelId);
-          
+
           if (applicationChannel) {
             await applicationChannel.send({ content: `<@${interaction.user.id}>`, embeds: [answersEmbed] });
             await interaction.followUp('Thank you for your application! Your responses have been sent.');
