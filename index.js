@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -10,7 +10,7 @@ const setStatus = require('./functions/setStatus');
 const deployCommands = require('./deploy-commands');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -66,7 +66,35 @@ client.on('interactionCreate', async interaction => {
 
   // Handle button interactions
   if (interaction.isButton()) {
-    // Your button interaction logic here
+    const user = interaction.user;
+    const questionType = interaction.customId; // Assuming customId represents question type
+
+    try {
+      // Send DM with questions
+      await user.send('Please answer the following questions:\n1. What is your name?\n2. What is your experience with this role?');
+
+      // Acknowledge the interaction
+      await interaction.reply({ content: 'I have sent you a DM with the questions.', ephemeral: true });
+
+      // Collect answers (this will be done in a separate handler)
+    } catch (error) {
+      console.error('Error sending DM:', error);
+      await interaction.reply({ content: 'There was an error sending you the DM. Please ensure you have DMs enabled.', ephemeral: true });
+    }
+  }
+});
+
+// Collect responses from users (example implementation)
+client.on('messageCreate', async message => {
+  if (message.author.bot || !message.guild) return;
+
+  // Check if the message is a response to the DM questions
+  if (message.channel.type === 'DM') {
+    // Process the responses (e.g., save to a database or channel)
+    console.log(`Received response from ${message.author.tag}: ${message.content}`);
+
+    // Optionally, let the user know their response was received
+    await message.reply('Thank you for your response! Your application has been submitted.');
   }
 });
 
