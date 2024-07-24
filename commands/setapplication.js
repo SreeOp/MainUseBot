@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageActionRow, MessageButton } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,20 +11,20 @@ module.exports = {
   async execute(interaction) {
     const channel = interaction.options.getChannel('channel');
 
-    const row = new MessageActionRow()
+    const row = new ActionRowBuilder()
       .addComponents(
-        new MessageButton()
+        new ButtonBuilder()
           .setCustomId('staff')
           .setLabel('Staff Application')
-          .setStyle('PRIMARY'),
-        new MessageButton()
+          .setStyle('Primary'),
+        new ButtonBuilder()
           .setCustomId('vehicle')
           .setLabel('Vehicle Application')
-          .setStyle('PRIMARY'),
-        new MessageButton()
+          .setStyle('Primary'),
+        new ButtonBuilder()
           .setCustomId('developer')
           .setLabel('Developer Application')
-          .setStyle('PRIMARY')
+          .setStyle('Primary')
       );
 
     try {
@@ -32,10 +32,16 @@ module.exports = {
         content: 'Click a button to start your application:',
         components: [row]
       });
-      await interaction.reply({ content: 'Application setup complete!', ephemeral: true });
+
+      if (!interaction.replied) {
+        await interaction.reply({ content: 'Application setup complete!', ephemeral: true });
+      }
     } catch (error) {
       console.error('Error sending setup message:', error);
-      await interaction.reply({ content: 'Failed to set up the application.', ephemeral: true });
+
+      if (!interaction.replied) {
+        await interaction.reply({ content: 'Failed to set up the application.', ephemeral: true });
+      }
     }
   },
 };
