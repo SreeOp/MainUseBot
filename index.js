@@ -2,13 +2,12 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const config = require('./config'); // Import the config file
 require('dotenv').config();
 
-// Import functions
+// Import the setStatus function and deployCommands function
 const setStatus = require('./functions/setStatus');
-const { handleInteraction } = require('./applicationHandler');
-const deployCommands = require('./deploy-commands'); // Import deployCommands
-const config = require('./config');
+const deployCommands = require('./deploy-commands');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
@@ -27,23 +26,27 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
-// Deploy commands
-deployCommands().catch(console.error);
-
 // Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
+  // Set the bot's status
   setStatus(client);
+
+  // Deploy commands
+  deployCommands().catch(console.error);
 });
 
 // Interaction create event
 client.on('interactionCreate', async interaction => {
+  if (!interaction.isCommand() && !interaction.isButton()) return;
+
+  // Handle command interactions
   if (interaction.isCommand()) {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
 
     const memberRoles = interaction.member.roles.cache;
-    const hasPermission = config.allowedRoles.some(roleId => memberRoles.has(roleId));
+    const hasPermission = config.allowedRoles.some(role => memberRoles.has(role));
 
     if (!hasPermission) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
@@ -59,13 +62,11 @@ client.on('interactionCreate', async interaction => {
         await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
       }
     }
-  } else if (interaction.isButton()) {
-    try {
-      await handleInteraction(interaction);
-    } catch (error) {
-      console.error('Error during interaction handling:', error);
-      await interaction.reply({ content: 'There was an error processing your application!', ephemeral: true });
-    }
+  }
+
+  // Handle button interactions
+  if (interaction.isButton()) {
+    // Your button interaction logic here
   }
 });
 
