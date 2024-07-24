@@ -4,13 +4,13 @@ const path = require('path');
 const express = require('express');
 require('dotenv').config();
 
-// Import the setStatus function
+// Import functions
 const setStatus = require('./functions/setStatus');
-// Import the staff application function
-const staffApplication = require('./functions/staffApplication');
+const { handleInteraction } = require('./applicationHandler');
+const config = require('./config'); // Import the config file
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -26,25 +26,24 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
+// Deploy commands
+const deployCommands = require('./deploy-commands');
+deployCommands().catch(console.error);
+
 // Ready event
-client.once('ready', async () => {
+client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
-  // Set the bot's status
   setStatus(client);
 });
 
 // Interaction create event
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isCommand() && !interaction.isButton() && !interaction.isModalSubmit()) return;
-
   if (interaction.isCommand()) {
     const command = client.commands.get(interaction.commandName);
-
     if (!command) return;
 
     const memberRoles = interaction.member.roles.cache;
-    const allowedRoles = process.env.ALLOWED_ROLES.split(',');
-    const hasPermission = allowedRoles.some(role => memberRoles.has(role));
+    const hasPermission = config.allowedRoles.some(roleId => memberRoles.has(roleId));
 
     if (!hasPermission) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
@@ -60,14 +59,12 @@ client.on('interactionCreate', async interaction => {
         await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
       }
     }
-  } else if (interaction.isButton() || interaction.isModalSubmit()) {
+  } else if (interaction.isButton()) {
     try {
-      await staffApplication(client, interaction);
+      await handleInteraction(interaction);
     } catch (error) {
-      console.error('Error handling interaction:', error);
-      if (!interaction.replied) {
-        await interaction.reply({ content: 'There was an error processing your request.', ephemeral: true });
-      }
+      console.error('Error during interaction handling:', error);
+      await interaction.reply({ content: 'There was an error processing your application!', ephemeral: true });
     }
   }
 });
