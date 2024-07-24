@@ -1,11 +1,9 @@
+// deploy-commands.js
+
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-
-const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID;
-const token = process.env.DISCORD_TOKEN;
 
 const commands = [];
 const commandsPath = path.join(__dirname, 'commands');
@@ -17,13 +15,13 @@ for (const file of commandFiles) {
   commands.push(command.data.toJSON());
 }
 
-const rest = new REST({ version: '10' }).setToken(token);
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-async function deployCommands() {
+(async () => {
   try {
     console.log('Started refreshing application (/) commands.');
 
-    await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
       body: commands,
     });
 
@@ -31,6 +29,4 @@ async function deployCommands() {
   } catch (error) {
     console.error(error);
   }
-}
-
-module.exports = deployCommands;
+})();
