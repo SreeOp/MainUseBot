@@ -6,9 +6,10 @@ require('dotenv').config(); // Load environment variables
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
+const handleStaffApplication = require('./functions/handleStaffApplication'); // Import the staff application function
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -43,8 +44,13 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
+  // Handle the staff application command
+  await handleStaffApplication(client, interaction);
+
+  // Check if ALLOWED_ROLES is defined
+  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
   const memberRoles = interaction.member.roles.cache;
-  const hasPermission = process.env.ALLOWED_ROLES.split(',').some(role => memberRoles.has(role));
+  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
 
   if (!hasPermission) {
     return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
