@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const deployCommands = require('./deploy-commands'); // Import the deployCommands function
 require('dotenv').config();
 
 const setStatus = require('./functions/setStatus');
@@ -20,12 +21,10 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
-const deployCommands = require('./deploy-commands');
-deployCommands().catch(console.error);
-
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
   setStatus(client);
+  deployCommands().catch(console.error); // Call deployCommands when the bot is ready
 });
 
 client.on('interactionCreate', async interaction => {
