@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -10,7 +10,7 @@ const setStatus = require('./functions/setStatus');
 const staffApplication = require('./functions/staffApplication');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -29,10 +29,6 @@ for (const file of commandFiles) {
 // Ready event
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
-
-  // Deploy commands
-  require('./deploy-commands');
-
   // Set the bot's status
   setStatus(client);
 });
@@ -41,30 +37,37 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand() && !interaction.isButton() && !interaction.isModalSubmit()) return;
 
-  try {
-    if (interaction.isCommand()) {
-      const command = client.commands.get(interaction.commandName);
+  if (interaction.isCommand()) {
+    const command = client.commands.get(interaction.commandName);
 
-      if (!command) return;
+    if (!command) return;
 
-      const memberRoles = interaction.member.roles.cache;
-      const allowedRoles = process.env.ALLOWED_ROLES.split(',');
-      const hasPermission = allowedRoles.some(role => memberRoles.has(role));
+    const memberRoles = interaction.member.roles.cache;
+    const allowedRoles = process.env.ALLOWED_ROLES.split(',');
+    const hasPermission = allowedRoles.some(role => memberRoles.has(role));
 
-      if (!hasPermission) {
-        return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-      }
-
-      await command.execute(interaction);
-    } else if (interaction.isButton()) {
-      await staffApplication(client, interaction);
+    if (!hasPermission) {
+      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
-  } catch (error) {
-    console.error('Error handling interaction:', error);
-    if (!interaction.replied) {
-      await interaction.reply({ content: 'There was an error processing your request.', ephemeral: true });
-    } else if (!interaction.deferred) {
-      await interaction.followUp({ content: 'There was an error processing your request.', ephemeral: true });
+
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(error);
+      if (!interaction.replied) {
+        await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+      } else {
+        await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
+      }
+    }
+  } else if (interaction.isButton() || interaction.isModalSubmit()) {
+    try {
+      await staffApplication(client, interaction);
+    } catch (error) {
+      console.error('Error handling interaction:', error);
+      if (!interaction.replied) {
+        await interaction.reply({ content: 'There was an error processing your request.', ephemeral: true });
+      }
     }
   }
 });
