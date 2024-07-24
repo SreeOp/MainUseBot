@@ -1,5 +1,3 @@
-// deploy-commands.js
-
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +15,7 @@ for (const file of commandFiles) {
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-(async () => {
+async function deployCommands() {
   try {
     console.log('Started refreshing application (/) commands.');
 
@@ -29,4 +27,6 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   } catch (error) {
     console.error(error);
   }
-})();
+}
+
+module.exports = deployCommands;
