@@ -7,7 +7,8 @@ require('dotenv').config();
 // Import functions
 const setStatus = require('./functions/setStatus');
 const { handleInteraction } = require('./applicationHandler');
-const config = require('./config'); // Import the config file
+const deployCommands = require('./deploy-commands'); // Import deployCommands
+const config = require('./config');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
@@ -27,7 +28,6 @@ for (const file of commandFiles) {
 }
 
 // Deploy commands
-const deployCommands = require('./deploy-commands');
 deployCommands().catch(console.error);
 
 // Ready event
