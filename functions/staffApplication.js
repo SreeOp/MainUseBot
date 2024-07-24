@@ -1,67 +1,68 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+// functions/staffApplication.js
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 
 module.exports = async (client, interaction) => {
-  if (interaction.isButton()) {
-    if (interaction.customId === 'apply') {
-      // Show job application menu
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('ems')
-          .setLabel('EMS')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId('pd')
-          .setLabel('PD')
-          .setStyle(ButtonStyle.Primary)
-      );
+  if (interaction.isSelectMenu() && interaction.customId === 'select_position') {
+    const user = interaction.user;
+    const position = interaction.values[0];
 
-      await interaction.reply({
-        content: 'Select Job Application:',
-        components: [row],
-        ephemeral: true
-      });
-    } else if (interaction.customId === 'ems' || interaction.customId === 'pd') {
-      const questions = interaction.customId === 'ems' ? [
-        { question: 'Why do you want to join the EMS?', customId: 'q1' },
-        { question: 'What experience do you have?', customId: 'q2' },
-      ] : [
-        { question: 'Why do you want to join the PD?', customId: 'q1' },
-        { question: 'What experience do you have?', customId: 'q2' },
-      ];
+    // Define questions based on the position
+    const questions = {
+      staff: ['Why do you want to be a staff member?', 'What experience do you have?'],
+      vehicle_developer: ['Why do you want to be a vehicle developer?', 'What experience do you have?'],
+      map_developer: ['Why do you want to be a map developer?', 'What experience do you have?'],
+      assistance: ['Why do you need assistance?', 'What kind of assistance do you require?'],
+    };
 
-      for (const { question, customId } of questions) {
-        const modal = new ModalBuilder()
-          .setCustomId(`modal_${customId}`)
-          .setTitle('Job Application')
-          .addComponents(
-            new ActionRowBuilder().addComponents(
-              new TextInputBuilder()
-                .setCustomId(customId)
-                .setLabel(question)
-                .setStyle(TextInputStyle.Paragraph)
-            )
-          );
-
-        await interaction.showModal(modal);
+    // Send questions via DM
+    try {
+      await user.send('You selected: ' + position);
+      for (const question of questions[position]) {
+        await user.send(question);
       }
-    }
-  } else if (interaction.isModalSubmit()) {
-    const channelId = process.env.APPLICATIONS_CHANNEL_ID;
-    const applicationChannel = client.channels.cache.get(channelId);
-
-    const answers = [];
-    for (const component of interaction.components) {
-      const input = component.components[0];
-      answers.push(`${input.label}: ${interaction.fields.getTextInputValue(input.customId)}`);
+      await user.send('Please reply to each question in separate messages.');
+      await interaction.reply({ content: 'Questions sent to your DM!', ephemeral: true });
+    } catch (error) {
+      console.error('Could not send DM to the user.', error);
+      await interaction.reply({ content: 'Could not send DM. Please ensure your DMs are open.', ephemeral: true });
+      return;
     }
 
-    const applicantId = interaction.user.id;
-    const applicantTag = interaction.user.tag;
+    // Collect answers
+    const filter = response => response.author.id === user.id;
+    const dmChannel = await user.createDM();
+    const collected = await dmChannel.awaitMessages({ filter, max: questions[position].length, time: 60000, errors: ['time'] });
 
-    await applicationChannel.send({
-      content: `New application submitted by <@${applicantId}> (${applicantTag}):\n\n${answers.join('\n')}`
-    });
+    let answers = [];
+    collected.forEach(message => answers.push(message.content));
 
-    await interaction.reply({ content: 'Application submitted!', ephemeral: true });
+    // Send answers to a specified channel
+    const applicationChannel = interaction.guild.channels.cache.get(process.env.APPLICATION_CHANNEL_ID);
+    if (applicationChannel) {
+      const acceptButton = new ButtonBuilder()
+        .setCustomId('accept_application')
+        .setLabel('Accept')
+        .setStyle(ButtonStyle.Success);
+
+      const rejectButton = new ButtonBuilder()
+        .setCustomId('reject_application')
+        .setLabel('Reject')
+        .setStyle(ButtonStyle.Danger);
+
+      const row = new ActionRowBuilder().addComponents(acceptButton, rejectButton);
+
+      await applicationChannel.send({
+        content: `Application for ${position}:\n\n${answers.map((answer, index) => `${questions[position][index]}: ${answer}`).join('\n')}`,
+        components: [row],
+      });
+    }
+  }
+
+  if (interaction.isButton()) {
+    if (interaction.customId === 'accept_application') {
+      await interaction.update({ content: 'Application accepted.', components: [] });
+    } else if (interaction.customId === 'reject_application') {
+      await interaction.update({ content: 'Application rejected.', components: [] });
+    }
   }
 };
