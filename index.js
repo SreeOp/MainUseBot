@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ButtonBuilder, ActionRowBuilder, MessageActionRow, MessageButton, InteractionType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -67,34 +67,45 @@ client.on('interactionCreate', async interaction => {
   // Handle button interactions
   if (interaction.isButton()) {
     const user = interaction.user;
-    const questionType = interaction.customId; // Assuming customId represents question type
+    const dmChannel = await user.createDM();
+    const questionQueue = [
+      "What is your name?",
+      "What position are you applying for?",
+      "Why do you want this position?",
+    ];
 
-    try {
-      // Send DM with questions
-      await user.send('Please answer the following questions:\n1. What is your name?\n2. What is your experience with this role?');
+    let questionIndex = 0;
 
-      // Acknowledge the interaction
-      await interaction.reply({ content: 'I have sent you a DM with the questions.', ephemeral: true });
+    // Send the first question
+    await dmChannel.send(questionQueue[questionIndex]);
 
-      // Collect answers (this will be done in a separate handler)
-    } catch (error) {
-      console.error('Error sending DM:', error);
-      await interaction.reply({ content: 'There was an error sending you the DM. Please ensure you have DMs enabled.', ephemeral: true });
-    }
-  }
-});
+    const collector = dmChannel.createMessageCollector({ time: 60000 }); // Collect messages for 1 minute
+    const answers = [];
 
-// Collect responses from users (example implementation)
-client.on('messageCreate', async message => {
-  if (message.author.bot || !message.guild) return;
+    collector.on('collect', message => {
+      if (message.author.id !== user.id) return; // Ignore messages from others
 
-  // Check if the message is a response to the DM questions
-  if (message.channel.type === 'DM') {
-    // Process the responses (e.g., save to a database or channel)
-    console.log(`Received response from ${message.author.tag}: ${message.content}`);
+      answers.push(message.content);
+      questionIndex += 1;
 
-    // Optionally, let the user know their response was received
-    await message.reply('Thank you for your response! Your application has been submitted.');
+      if (questionIndex < questionQueue.length) {
+        // Send next question
+        dmChannel.send(questionQueue[questionIndex]);
+      } else {
+        // All questions answered
+        collector.stop();
+      }
+    });
+
+    collector.on('end', collected => {
+      // Send collected answers to the designated channel
+      const logChannel = client.channels.cache.get(config.logChannelId); // Set this in your config
+      if (logChannel) {
+        logChannel.send(`Application from ${user.tag}:\n\n${answers.join('\n')}`);
+      }
+    });
+
+    await interaction.reply({ content: 'I have sent you a DM with the questions.', ephemeral: true });
   }
 });
 
