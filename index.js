@@ -2,31 +2,40 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const deployCommands = require('./deploy-commands'); // Import the deployCommands function
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables
 
+// Import the setStatus function
 const setStatus = require('./functions/setStatus');
-const handleStaffApplication = require('./functions/handleStaffApplication');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+// Create a new client instance
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+// Initialize commands collection
 client.commands = new Collection();
 
+// Command files
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
+// Set commands to the collection
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
   client.commands.set(command.data.name, command);
 }
 
+// Deploy commands
+const deployCommands = require('./deploy-commands');
+deployCommands().catch(console.error);
+
+// Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
+  // Set the bot's status
   setStatus(client);
-  deployCommands().catch(console.error); // Call deployCommands when the bot is ready
 });
 
+// Interaction create event
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
@@ -34,11 +43,10 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
-  await handleStaffApplication(client, interaction);
-
-  const memberRoles = interaction.member.roles.cache;
+  // Check if ALLOWED_ROLES is defined
   const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
-  const hasPermission = allowedRoles.some(roleId => memberRoles.has(roleId));
+  const memberRoles = interaction.member.roles.cache;
+  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
 
   if (!hasPermission) {
     return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
@@ -56,8 +64,10 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
+// Login to Discord with your app's token from environment variables
 client.login(process.env.DISCORD_TOKEN);
 
+// Set up an Express server
 const app = express();
 const PORT = process.env.PORT || 3000;
 
