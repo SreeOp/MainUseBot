@@ -19,7 +19,7 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(button);
 
     // Send the message with the image and button
-    await interaction.reply({
+    await interaction.channel.send({
       content: 'Click the button to get whitelisted!',
       files: [imageAttachment],
       components: [row],
