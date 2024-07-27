@@ -54,8 +54,6 @@ client.on('interactionCreate', async interaction => {
     } catch (error) {
       console.error(error);
       if (!interaction.replied) {
-        await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
-      } else {
         await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
       }
     }
@@ -65,15 +63,15 @@ client.on('interactionCreate', async interaction => {
       const role = interaction.guild.roles.cache.get(roleId);
 
       if (!role) {
-        return interaction.reply({ content: 'Whitelist role not found!', ephemeral: true });
+        return interaction.followUp({ content: 'Whitelist role not found!', ephemeral: true });
       }
 
       try {
         await interaction.member.roles.add(role);
-        await interaction.reply({ content: 'You have been whitelisted!', ephemeral: true });
+        await interaction.update({ content: 'You have been whitelisted!', components: [] }); // Update the interaction message
       } catch (error) {
         console.error(error);
-        await interaction.reply({ content: 'Failed to add whitelist role.', ephemeral: true });
+        await interaction.followUp({ content: 'Failed to add whitelist role.', ephemeral: true });
       }
     }
   }
