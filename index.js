@@ -8,6 +8,8 @@ require('dotenv').config();
 // Import and run deploy-commands.js to register commands
 require('./deploy-commands');
 
+const setStatus = require('./functions/setStatus'); // Adjust path if needed
+
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
