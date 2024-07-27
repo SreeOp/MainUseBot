@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-require('dotenv').config(); // Load environment variables
+require('dotenv').config();
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
@@ -41,7 +41,6 @@ client.on('interactionCreate', async interaction => {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
 
-    // Check if ALLOWED_ROLES is defined
     const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
     const memberRoles = interaction.member.roles.cache;
     const hasPermission = allowedRoles.some(role => memberRoles.has(role));
