@@ -1,27 +1,36 @@
-const { SlashCommandBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
-const config = require('../config'); // Make sure config is correctly imported
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('whitelist')
-    .setDescription('Send a message with an image and a whitelist button'),
+    .setDescription('Send a whitelist message with a button'),
   async execute(interaction) {
-    // Create an embed with an image
-    const embed = new EmbedBuilder()
-      .setTitle('Whitelist Status')
-      .setDescription('Click the button below to get whitelisted!')
-      .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=66a5aef4&is=66a45d74&hm=8e086dcd0354b98c305995ec2f6b7af41ca854cca741be26ffb1b304fa942d6d&'); // Replace with your image URL
+    // Acknowledge the interaction to avoid the "Unknown interaction" error
+    await interaction.deferReply();
 
-    // Create a button
+    // URL or path of the image you want to send
+    const imageUrl = 'https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=66a5aef4&is=66a45d74&hm=8e086dcd0354b98c305995ec2f6b7af41ca854cca741be26ffb1b304fa942d6d&'; // Change to your image URL or path
+    const imageAttachment = new AttachmentBuilder(imageUrl);
+
+    // Create the button
     const button = new ButtonBuilder()
-      .setCustomId('whitelist_button')
-      .setLabel('Get Whitelisted')
+      .setCustomId('get_whitelist')
+      .setLabel('Get Whitelist')
       .setStyle(ButtonStyle.Primary);
 
-    // Create an action row and add the button to it
+    // Create the action row and add the button to it
     const row = new ActionRowBuilder().addComponents(button);
 
-    // Send the message with the embed and button
-    await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+    // Send the message with the image and button
+    try {
+      await interaction.followUp({
+        content: 'Click the button to get whitelisted!',
+        files: [imageAttachment],
+        components: [row],
+      });
+    } catch (error) {
+      console.error('Failed to send whitelist message:', error);
+      await interaction.followUp({ content: 'Failed to send whitelist message.', ephemeral: true });
+    }
   },
 };
