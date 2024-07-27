@@ -2,13 +2,14 @@ const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const config = require('./config'); // Import the config file
 require('dotenv').config();
 
-// Import the setStatus function
-const setStatus = require('./functions/setStatus');
+// Import and run deploy-commands.js to register commands
+require('./deploy-commands');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -24,26 +25,22 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
-// Deploy commands
-const deployCommands = require('./deploy-commands');
-deployCommands().catch(console.error);
-
 // Ready event
-client.once('ready', () => {
+client.once(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user.tag}`);
   // Set the bot's status
   setStatus(client);
 });
 
 // Interaction create event
-client.on('interactionCreate', async interaction => {
+client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isCommand()) {
     const command = client.commands.get(interaction.commandName);
+
     if (!command) return;
 
-    const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
     const memberRoles = interaction.member.roles.cache;
-    const hasPermission = allowedRoles.some(role => memberRoles.has(role));
+    const hasPermission = config.allowedRoles.some(role => memberRoles.has(role));
 
     if (!hasPermission) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
@@ -54,25 +51,23 @@ client.on('interactionCreate', async interaction => {
     } catch (error) {
       console.error(error);
       if (!interaction.replied) {
+        await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+      } else {
         await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
       }
     }
-  } else if (interaction.isButton()) {
-    if (interaction.customId === 'get_whitelist') {
-      const roleId = process.env.WHITELIST_ROLE_ID; // Ensure you have the whitelist role ID in your .env
-      const role = interaction.guild.roles.cache.get(roleId);
+  } else if (interaction.isButton() && interaction.customId === 'whitelist_button') {
+    const whitelistRoleId = '1253347204601741342'; // Replace with the actual role ID
 
-      if (!role) {
-        return interaction.followUp({ content: 'Whitelist role not found!', ephemeral: true });
-      }
+    const member = interaction.member;
 
-      try {
-        await interaction.member.roles.add(role);
-        await interaction.update({ content: 'You have been whitelisted!', components: [] }); // Update the interaction message
-      } catch (error) {
-        console.error(error);
-        await interaction.followUp({ content: 'Failed to add whitelist role.', ephemeral: true });
-      }
+    // Check if the member already has the whitelist role
+    if (member.roles.cache.has(whitelistRoleId)) {
+      await interaction.reply({ content: 'You are already whitelisted!', ephemeral: true });
+    } else {
+      // Add the whitelist role to the member
+      await member.roles.add(whitelistRoleId);
+      await interaction.reply({ content: 'You have been whitelisted!', ephemeral: true });
     }
   }
 });
