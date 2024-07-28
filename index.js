@@ -1,14 +1,14 @@
-const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -37,44 +37,29 @@ client.once('ready', () => {
 
 // Interaction create event
 client.on('interactionCreate', async interaction => {
-  if (interaction.isCommand()) {
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
+  if (!interaction.isCommand()) return;
 
-    const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
-    const memberRoles = interaction.member.roles.cache;
-    const hasPermission = allowedRoles.some(role => memberRoles.has(role));
+  const command = client.commands.get(interaction.commandName);
 
-    if (!hasPermission) {
-      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-    }
+  if (!command) return;
 
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(error);
-      if (!interaction.replied) {
-        await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
-      } else {
-        await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
-      }
-    }
-  } else if (interaction.isButton()) {
-    if (interaction.customId === 'get_whitelist') {
-      const roleId = process.env.WHITELIST_ROLE_ID; // Ensure you have the whitelist role ID in your .env
-      const role = interaction.guild.roles.cache.get(roleId);
+  // Check if ALLOWED_ROLES is defined
+  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
+  const memberRoles = interaction.member.roles.cache;
+  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
 
-      if (!role) {
-        return interaction.reply({ content: 'Whitelist role not found!', ephemeral: true });
-      }
+  if (!hasPermission) {
+    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+  }
 
-      try {
-        await interaction.member.roles.add(role);
-        await interaction.reply({ content: 'You have been whitelisted!', ephemeral: true });
-      } catch (error) {
-        console.error(error);
-        await interaction.reply({ content: 'Failed to add whitelist role.', ephemeral: true });
-      }
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+    if (!interaction.replied) {
+      await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+    } else {
+      await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
     }
   }
 });
