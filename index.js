@@ -2,14 +2,13 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const config = require('./config'); // Import the config file
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -24,6 +23,10 @@ for (const file of commandFiles) {
   const command = require(filePath);
   client.commands.set(command.data.name, command);
 }
+
+// Deploy commands
+const deployCommands = require('./deploy-commands');
+deployCommands().catch(console.error);
 
 // Ready event
 client.once('ready', () => {
@@ -40,8 +43,10 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
+  // Check if ALLOWED_ROLES is defined
+  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
   const memberRoles = interaction.member.roles.cache;
-  const hasPermission = config.allowedRoles.some(role => memberRoles.has(role));
+  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
 
   if (!hasPermission) {
     return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
@@ -73,6 +78,3 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
-
-// Call deploy-commands.js
-require('./deploy-commands')();
