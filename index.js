@@ -5,6 +5,9 @@ const express = require('express');
 const config = require('./config'); // Import the config file
 require('dotenv').config();
 
+// Call deploy-commands.js to register commands
+require('./deploy-commands');
+
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
