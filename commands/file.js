@@ -44,4 +44,8 @@ module.exports = {
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({ content: 'Failed to send message.', ephemeral: true });
       } else if (interaction.deferred) {
-        await
+        await interaction.editReply({ content: 'Failed to send message.', ephemeral: true });
+      }
+    }
+  },
+};
