@@ -30,21 +30,18 @@ module.exports = {
       );
 
     try {
+      await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction first
       await interaction.channel.send({
         content: message,
         files: [imageUrl],
         components: [row]
       });
-      await interaction.reply({ content: 'Message sent!', ephemeral: true });
+      await interaction.editReply({ content: 'Message sent!', ephemeral: true });
     } catch (error) {
       console.error(error);
 
       // Check if interaction is already acknowledged before replying
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({ content: 'Failed to send message.', ephemeral: true });
-      } else {
-        await interaction.followUp({ content: 'Failed to send message.', ephemeral: true });
-      }
-    }
-  },
-};
+      } else if (interaction.deferred) {
+        await
