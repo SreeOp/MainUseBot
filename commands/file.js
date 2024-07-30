@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -14,30 +14,31 @@ module.exports = {
         .setRequired(true))
     .addStringOption(option =>
       option.setName('downloadurl')
-        .setDescription('Custom download URL')
+        .setDescription('URL for the download button')
         .setRequired(true)),
   async execute(interaction) {
-    const messageContent = interaction.options.getString('message');
+    const message = interaction.options.getString('message');
     const imageUrl = interaction.options.getString('image');
     const downloadUrl = interaction.options.getString('downloadurl');
 
-    const embed = new MessageEmbed()
-      .setDescription(messageContent)
-      .setImage(imageUrl);
-
-    const row = new MessageActionRow()
+    const row = new ActionRowBuilder()
       .addComponents(
-        new MessageButton()
+        new ButtonBuilder()
           .setLabel('Download')
-          .setStyle('LINK')
+          .setStyle(ButtonStyle.Link)
           .setURL(downloadUrl)
       );
 
     try {
-      await interaction.reply({ embeds: [embed], components: [row] });
+      await interaction.channel.send({
+        content: message,
+        files: [imageUrl],
+        components: [row]
+      });
+      await interaction.reply({ content: 'Message sent!', ephemeral: true });
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+      await interaction.reply({ content: 'Failed to send message.', ephemeral: true });
     }
   },
 };
