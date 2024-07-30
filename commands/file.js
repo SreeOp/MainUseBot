@@ -38,7 +38,13 @@ module.exports = {
       await interaction.reply({ content: 'Message sent!', ephemeral: true });
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: 'Failed to send message.', ephemeral: true });
+
+      // Check if interaction is already acknowledged before replying
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: 'Failed to send message.', ephemeral: true });
+      } else {
+        await interaction.followUp({ content: 'Failed to send message.', ephemeral: true });
+      }
     }
   },
 };
