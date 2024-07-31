@@ -16,8 +16,16 @@ module.exports = {
         .setDescription('Description of the embed')
         .setRequired(false))
     .addStringOption(option =>
-      option.setName('image')
-        .setDescription('Image URL for the embed')
+      option.setName('image1')
+        .setDescription('First image URL for the embed')
+        .setRequired(false))
+    .addStringOption(option =>
+      option.setName('image2')
+        .setDescription('Second image URL for the embed')
+        .setRequired(false))
+    .addStringOption(option =>
+      option.setName('image3')
+        .setDescription('Third image URL for the embed')
         .setRequired(false))
     .addStringOption(option =>
       option.setName('footer')
@@ -38,7 +46,9 @@ module.exports = {
 
     const title = interaction.options.getString('title') || '\u200B';
     const description = interaction.options.getString('description') || '\u200B';
-    const image = interaction.options.getString('image');
+    const image1 = interaction.options.getString('image1');
+    const image2 = interaction.options.getString('image2');
+    const image3 = interaction.options.getString('image3');
     const footer = interaction.options.getString('footer') || '\u200B';
     let color = interaction.options.getString('color');
 
@@ -58,9 +68,14 @@ module.exports = {
       color: color,
       title: title,
       description: description,
-      image: { url: image },
-      footer: { text: footer }
+      footer: { text: footer },
+      fields: []
     };
+
+    // Add images to the embed
+    if (image1) embed.fields.push({ name: '\u200B', value: `[Image 1](${image1})`, inline: false });
+    if (image2) embed.fields.push({ name: '\u200B', value: `[Image 2](${image2})`, inline: false });
+    if (image3) embed.fields.push({ name: '\u200B', value: `[Image 3](${image3})`, inline: false });
 
     try {
       await interaction.channel.send({ embeds: [embed] });
