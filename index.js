@@ -1,15 +1,10 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const express = require('express');
-const config = require('./config'); // Import the config file
 require('dotenv').config();
 
 // Call deploy-commands.js to register commands
 require('./deploy-commands');
-
-// Import the setStatus function
-const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
@@ -31,8 +26,6 @@ for (const file of commandFiles) {
 // Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
-  // Set the bot's status
-  setStatus(client);
 });
 
 // Interaction create event
@@ -42,13 +35,6 @@ client.on('interactionCreate', async interaction => {
   const command = client.commands.get(interaction.commandName);
 
   if (!command) return;
-
-  const memberRoles = interaction.member.roles.cache;
-  const hasPermission = config.allowedRoles.some(role => memberRoles.has(role));
-
-  if (!hasPermission) {
-    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-  }
 
   try {
     await command.execute(interaction);
@@ -66,6 +52,7 @@ client.on('interactionCreate', async interaction => {
 client.login(process.env.DISCORD_TOKEN);
 
 // Set up an Express server
+const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
