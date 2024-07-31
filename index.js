@@ -1,13 +1,14 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+const express = require('express');
+require('dotenv').config(); // Load environment variables
 
-// Call deploy-commands.js to register commands
-require('./deploy-commands');
+// Import the setStatus function
+const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -23,9 +24,15 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
+// Deploy commands
+const deployCommands = require('./deploy-commands');
+deployCommands().catch(console.error);
+
 // Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
+  // Set the bot's status
+  setStatus(client);
 });
 
 // Interaction create event
@@ -36,14 +43,24 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
+  // Check if ALLOWED_ROLES is defined
+  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
+  const memberRoles = interaction.member.roles.cache;
+  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
+
+  if (!hasPermission) {
+    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+  }
+
   try {
     await command.execute(interaction);
   } catch (error) {
     console.error(error);
-    if (!interaction.replied && !interaction.deferred) {
+    // Ensure to check if the interaction has already been acknowledged
+    if (!interaction.replied) {
       await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
-    } else if (interaction.deferred) {
-      await interaction.editReply({ content: 'There was an error executing that command!', ephemeral: true });
+    } else {
+      await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
     }
   }
 });
@@ -52,7 +69,6 @@ client.on('interactionCreate', async interaction => {
 client.login(process.env.DISCORD_TOKEN);
 
 // Set up an Express server
-const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
