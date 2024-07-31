@@ -11,8 +11,11 @@ require('./deploy-commands');
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
+// Import the stayInVoiceChannel function
+const stayInVoiceChannel = require('./functions/stayInVoiceChannel');
+
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -33,6 +36,10 @@ client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
   // Set the bot's status
   setStatus(client);
+  // Keep the bot in a voice channel
+  const guildId = process.env.GUILD_ID;
+  const voiceChannelId = process.env.VOICE_CHANNEL_ID;
+  stayInVoiceChannel(client, guildId, voiceChannelId);
 });
 
 // Interaction create event
