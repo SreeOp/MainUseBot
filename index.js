@@ -2,13 +2,17 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-require('dotenv').config(); // Load environment variables
+const config = require('./config'); // Import the config file
+require('dotenv').config();
+
+// Call deploy-commands.js to register commands
+require('./deploy-commands');
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -23,10 +27,6 @@ for (const file of commandFiles) {
   const command = require(filePath);
   client.commands.set(command.data.name, command);
 }
-
-// Deploy commands
-const deployCommands = require('./deploy-commands');
-deployCommands().catch(console.error);
 
 // Ready event
 client.once('ready', () => {
@@ -43,10 +43,8 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
-  // Check if ALLOWED_ROLES is defined
-  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
   const memberRoles = interaction.member.roles.cache;
-  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
+  const hasPermission = config.allowedRoles.some(role => memberRoles.has(role));
 
   if (!hasPermission) {
     return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
@@ -56,11 +54,10 @@ client.on('interactionCreate', async interaction => {
     await command.execute(interaction);
   } catch (error) {
     console.error(error);
-    // Ensure to check if the interaction has already been acknowledged
-    if (!interaction.replied) {
+    if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
-    } else {
-      await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
+    } else if (interaction.deferred) {
+      await interaction.editReply({ content: 'There was an error executing that command!', ephemeral: true });
     }
   }
 });
