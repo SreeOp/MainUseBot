@@ -64,36 +64,27 @@ module.exports = {
       color = 0x0099ff; // Default color if not provided or invalid
     }
 
-    const embeds = [
-      {
-        color: color,
-        title: title,
-        description: description,
-        footer: { text: footer },
-      },
-    ];
+    const embed = {
+      color: color,
+      title: title,
+      description: description,
+      footer: { text: footer },
+      fields: []
+    };
 
+    // Add images to fields
     if (image1) {
-      embeds.push({
-        color: color,
-        image: { url: image1 },
-      });
+      embed.fields.push({ name: 'Image 1', value: '\u200B', inline: false }, { name: '\u200B', value: `[⠀](${image1})`, inline: false });
     }
     if (image2) {
-      embeds.push({
-        color: color,
-        image: { url: image2 },
-      });
+      embed.fields.push({ name: 'Image 2', value: '\u200B', inline: false }, { name: '\u200B', value: `[⠀](${image2})`, inline: false });
     }
     if (image3) {
-      embeds.push({
-        color: color,
-        image: { url: image3 },
-      });
+      embed.fields.push({ name: 'Image 3', value: '\u200B', inline: false }, { name: '\u200B', value: `[⠀](${image3})`, inline: false });
     }
 
     try {
-      await interaction.channel.send({ embeds: embeds });
+      await interaction.channel.send({ embeds: [embed] });
       await interaction.reply({ content: 'Embed message sent!', ephemeral: true });
     } catch (error) {
       console.error(error);
