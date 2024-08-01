@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 
 // Define the role IDs allowed to use the command
-const AllowedRoleIDs = ['1007930481716760666', '1046786167644880946']; // Replace with actual role IDs
+const AllowedRoleIDs = ['1224982919492272208', '1267804637977645098']; // Replace with actual role IDs
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,16 +16,8 @@ module.exports = {
         .setDescription('Description of the embed')
         .setRequired(false))
     .addStringOption(option =>
-      option.setName('image1')
-        .setDescription('First image URL for the embed')
-        .setRequired(false))
-    .addStringOption(option =>
-      option.setName('image2')
-        .setDescription('Second image URL for the embed')
-        .setRequired(false))
-    .addStringOption(option =>
-      option.setName('image3')
-        .setDescription('Third image URL for the embed')
+      option.setName('image')
+        .setDescription('Image URL for the embed')
         .setRequired(false))
     .addStringOption(option =>
       option.setName('footer')
@@ -46,9 +38,7 @@ module.exports = {
 
     const title = interaction.options.getString('title') || '\u200B';
     const description = interaction.options.getString('description') || '\u200B';
-    const image1 = interaction.options.getString('image1');
-    const image2 = interaction.options.getString('image2');
-    const image3 = interaction.options.getString('image3');
+    const image = interaction.options.getString('image');
     const footer = interaction.options.getString('footer') || '\u200B';
     let color = interaction.options.getString('color');
 
@@ -68,14 +58,9 @@ module.exports = {
       color: color,
       title: title,
       description: description,
-      footer: { text: footer },
-      fields: []
+      image: { url: image },
+      footer: { text: footer }
     };
-
-    // Add images to the embed
-    if (image1) embed.fields.push({ name: '\u200B', value: `[Image 1](${image1})`, inline: false });
-    if (image2) embed.fields.push({ name: '\u200B', value: `[Image 2](${image2})`, inline: false });
-    if (image3) embed.fields.push({ name: '\u200B', value: `[Image 3](${image3})`, inline: false });
 
     try {
       await interaction.channel.send({ embeds: [embed] });
