@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -20,8 +20,17 @@ module.exports = {
             const userInvites = invites.filter(inv => inv.inviter.id === member.id);
             const totalUses = userInvites.reduce((acc, invite) => acc + invite.uses, 0);
 
-            // Reply with the total number of invites
-            interaction.reply(`${member.displayName} has ${totalUses} invite(s).`);
+            // Create an embed message
+            const embed = new EmbedBuilder()
+                .setColor(0xFF4D00) // Color code as an integer
+                .setTitle('Invite Check')
+                .setDescription(`${member.displayName} has ${totalUses} invite(s).`)
+                .setThumbnail(member.user.displayAvatarURL())
+                .setTimestamp()
+                .setFooter({ text: 'Invite Information' });
+
+            // Reply with the embed
+            interaction.reply({ embeds: [embed] });
         } catch (error) {
             console.error(error);
             interaction.reply({ content: 'Failed to fetch invites.', ephemeral: true });
