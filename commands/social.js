@@ -48,6 +48,11 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(button);
 
-        await interaction.reply({ embeds: [embed], components: [row] });
+        // Send the message directly to the channel
+        await interaction.channel.send({ embeds: [embed], components: [row] });
+
+        // Acknowledge the interaction without sending a visible reply
+        await interaction.deferReply({ ephemeral: true });
+        await interaction.deleteReply();
     }
 };
