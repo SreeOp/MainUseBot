@@ -21,16 +21,16 @@ module.exports = {
                 .setDescription('The URL the button links to')
                 .setRequired(true))
         .addStringOption(option => 
-            option.setName('emojiurl')
-                .setDescription('The URL of the emoji for the button')
-                .setRequired(false)), // Optional
+            option.setName('emojiid')
+                .setDescription('The ID of the custom emoji for the button')
+                .setRequired(false)), // Made optional; can be set to true if required
 
     async execute(interaction) {
         const title = interaction.options.getString('title');
         const imageUrl = interaction.options.getString('image');
         const buttonName = interaction.options.getString('buttonname');
         const buttonUrl = interaction.options.getString('buttonurl');
-        const emojiUrl = interaction.options.getString('emojiurl');
+        const emojiId = interaction.options.getString('emojiid');
 
         const embed = new EmbedBuilder()
             .setTitle(title)
@@ -42,8 +42,8 @@ module.exports = {
             .setStyle(ButtonStyle.Link)
             .setURL(buttonUrl);
 
-        if (emojiUrl) {
-            button.setEmoji({ url: emojiUrl });
+        if (emojiId) {
+            button.setEmoji(emojiId); // Set the custom emoji by ID if provided
         }
 
         const row = new ActionRowBuilder().addComponents(button);
