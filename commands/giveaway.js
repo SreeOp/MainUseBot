@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('giveaway')
+    .setName('give')
     .setDescription('Start a giveaway')
     .addIntegerOption(option =>
       option.setName('days')
