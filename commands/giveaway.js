@@ -1,40 +1,51 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
+// This would ideally be some persistent storage or database
+const giveaways = {};
+
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('give')
+    .setName('giveawaaay')
     .setDescription('Start a giveaway')
-    .addIntegerOption(option =>
-      option.setName('days')
-        .setDescription('Number of days for the giveaway')
-        .setRequired(true))
-    .addIntegerOption(option =>
-      option.setName('hours')
-        .setDescription('Number of hours for the giveaway')
-        .setRequired(true))
-    .addIntegerOption(option =>
-      option.setName('minutes')
-        .setDescription('Number of minutes for the giveaway')
-        .setRequired(true))
-    .addIntegerOption(option =>
-      option.setName('seconds')
-        .setDescription('Number of seconds for the giveaway')
+    .addStringOption(option =>
+      option.setName('duration')
+        .setDescription('Duration of the giveaway (e.g., 10h, 15m, 2d)')
         .setRequired(true)),
   async execute(interaction) {
-    const days = interaction.options.getInteger('days');
-    const hours = interaction.options.getInteger('hours');
-    const minutes = interaction.options.getInteger('minutes');
-    const seconds = interaction.options.getInteger('seconds');
+    const durationInput = interaction.options.getString('duration');
+    let durationMs;
 
-    const duration = days * 86400000 + hours * 3600000 + minutes * 60000 + seconds * 1000;
-    const endTime = Date.now() + duration;
+    // Parse duration input
+    const match = durationInput.match(/^(\d+)(d|h|m|s)$/);
+    if (!match) {
+      return interaction.reply({ content: 'Invalid duration format. Please use the format like 10h, 15m, 2d.', ephemeral: true });
+    }
+
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+
+    switch (unit) {
+      case 'd':
+        durationMs = value * 86400000; // days to milliseconds
+        break;
+      case 'h':
+        durationMs = value * 3600000; // hours to milliseconds
+        break;
+      case 'm':
+        durationMs = value * 60000; // minutes to milliseconds
+        break;
+      case 's':
+        durationMs = value * 1000; // seconds to milliseconds
+        break;
+    }
+
+    const endTime = Date.now() + durationMs;
 
     const embed = new EmbedBuilder()
-      .setColor(0x0099FF)
+      .setColor(0xFF4D00)
       .setTitle('Giveaway Started!')
       .setDescription('Click the button below to join the giveaway!')
       .addFields(
-        { name: 'Duration', value: `${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds` },
         { name: 'Ends at', value: `<t:${Math.floor(endTime / 1000)}:R>` }
       );
 
@@ -49,23 +60,45 @@ module.exports = {
 
     const message = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
+    // Store giveaway information
+    giveaways[message.id] = {
+      endTime,
+      participants: [],
+      intervalId: null
+    };
+
+    // Function to update the embed
     const updateEmbed = () => {
-      if (Date.now() >= endTime) {
-        clearInterval(interval);
+      if (Date.now() >= giveaways[message.id].endTime) {
+        clearInterval(giveaways[message.id].intervalId);
         embed.setDescription('Giveaway Ended');
-        embed.setFields({ name: 'Winners', value: 'Winners will be announced soon!' });
+        const participants = giveaways[message.id].participants;
+        const winnerIndex = Math.floor(Math.random() * participants.length);
+        const winnerId = participants[winnerIndex];
+        embed.addFields({ name: 'Winner', value: `<@${winnerId}>` });
         message.edit({ embeds: [embed], components: [] });
         return;
       }
 
       embed.setFields(
-        { name: 'Time Left', value: `<t:${Math.floor(endTime / 1000)}:R>` }
+        { name: 'Time Left', value: `<t:${Math.floor(giveaways[message.id].endTime / 1000)}:R>` }
       );
       message.edit({ embeds: [embed] });
     };
 
-    const interval = setInterval(updateEmbed, 60000); // Update every minute
+    giveaways[message.id].intervalId = setInterval(updateEmbed, 60000); // Update every minute
 
     // Ensure to clear this interval if the bot restarts or stops
   },
+  buttonHandler: async (interaction) => {
+    if (interaction.customId === 'join_giveaway') {
+      const giveaway = giveaways[interaction.message.id];
+      if (!giveaway.participants.includes(interaction.user.id)) {
+        giveaway.participants.push(interaction.user.id);
+        await interaction.reply({ content: 'You have joined the giveaway!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: 'You are already in the giveaway!', ephemeral: true });
+      }
+    }
+  }
 };
