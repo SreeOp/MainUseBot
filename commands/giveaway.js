@@ -1,49 +1,71 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('giveaway')
-    .setDescription('Starts a giveaway')
-    .addStringOption(option =>
-      option.setName('prize')
-        .setDescription('The prize for the giveaway')
+    .setDescription('Start a giveaway')
+    .addIntegerOption(option =>
+      option.setName('days')
+        .setDescription('Number of days for the giveaway')
         .setRequired(true))
     .addIntegerOption(option =>
-      option.setName('duration')
-        .setDescription('Duration of the giveaway in seconds')
+      option.setName('hours')
+        .setDescription('Number of hours for the giveaway')
+        .setRequired(true))
+    .addIntegerOption(option =>
+      option.setName('minutes')
+        .setDescription('Number of minutes for the giveaway')
+        .setRequired(true))
+    .addIntegerOption(option =>
+      option.setName('seconds')
+        .setDescription('Number of seconds for the giveaway')
         .setRequired(true)),
-
   async execute(interaction) {
-    const prize = interaction.options.getString('prize');
-    const duration = interaction.options.getInteger('duration');
-    
+    const days = interaction.options.getInteger('days');
+    const hours = interaction.options.getInteger('hours');
+    const minutes = interaction.options.getInteger('minutes');
+    const seconds = interaction.options.getInteger('seconds');
+
+    const duration = days * 86400000 + hours * 3600000 + minutes * 60000 + seconds * 1000;
+    const endTime = Date.now() + duration;
+
     const embed = new EmbedBuilder()
-      .setTitle('🎉 Giveaway! 🎉')
-      .setDescription(`Prize: **${prize}**\nReact with 🎉 to enter!\nEnds in: **${duration}** seconds`)
-      .setColor(0x00ff00);
+      .setColor(0x0099FF)
+      .setTitle('Giveaway Started!')
+      .setDescription('Click the button below to join the giveaway!')
+      .addFields(
+        { name: 'Duration', value: `${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds` },
+        { name: 'Ends at', value: `<t:${Math.floor(endTime / 1000)}:R>` }
+      );
 
-    await interaction.reply({ embeds: [embed], fetchReply: true });
-    const message = await interaction.fetchReply();
-    
-    await message.react('🎉');
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('join_giveaway')
+          .setLabel('Join Giveaway')
+          .setStyle(ButtonStyle.Primary)
+          .setEmoji('🎉')
+      );
 
-    setTimeout(async () => {
-      const fetchedMessage = await message.fetch();
-      const reactions = fetchedMessage.reactions.cache.get('🎉');
-      
-      if (!reactions) return interaction.followUp('No one entered the giveaway.');
+    const message = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
-      const users = await reactions.users.fetch();
-      const filteredUsers = users.filter(user => !user.bot);
-
-      if (filteredUsers.size === 0) {
-        return interaction.followUp('No valid entries, giveaway canceled.');
+    const updateEmbed = () => {
+      if (Date.now() >= endTime) {
+        clearInterval(interval);
+        embed.setDescription('Giveaway Ended');
+        embed.setFields({ name: 'Winners', value: 'Winners will be announced soon!' });
+        message.edit({ embeds: [embed], components: [] });
+        return;
       }
 
-      const winner = filteredUsers.random();
+      embed.setFields(
+        { name: 'Time Left', value: `<t:${Math.floor(endTime / 1000)}:R>` }
+      );
+      message.edit({ embeds: [embed] });
+    };
 
-      await interaction.followUp(`🎉 Congratulations ${winner}! You won the **${prize}**! 🎉`);
-    }, duration * 1000);
+    const interval = setInterval(updateEmbed, 60000); // Update every minute
+
+    // Ensure to clear this interval if the bot restarts or stops
   },
 };
