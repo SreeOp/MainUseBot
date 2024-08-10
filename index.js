@@ -6,11 +6,9 @@ require('dotenv').config(); // Load environment variables
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
-// Import the ticket handler
-const { handleTicket } = require('./functions/ticket');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -39,12 +37,6 @@ client.once('ready', () => {
 
 // Interaction create event
 client.on('interactionCreate', async interaction => {
-  if (interaction.isStringSelectMenu() && interaction.customId === 'ticketMenu') {
-    // Handle ticket menu selection
-    await handleTicket(interaction);
-    return;
-  }
-
   if (!interaction.isCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
