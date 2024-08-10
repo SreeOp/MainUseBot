@@ -6,18 +6,9 @@ require('dotenv').config(); // Load environment variables
 
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
-// Import ticket functions
-const { createTicketMenu, handleTicketInteraction } = require('./functions/ticket');
 
 // Create a new client instance
-const client = new Client({ 
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-  ],
-});
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -42,23 +33,10 @@ client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
   // Set the bot's status
   setStatus(client);
-
-  // Create the ticket menu in a specified channel
-  const ticketChannel = client.channels.cache.get(process.env.TICKET_CHANNEL_ID); // Ensure you have this ID set in .env
-  if (ticketChannel) {
-    createTicketMenu(ticketChannel).catch(console.error);
-  } else {
-    console.error('Ticket channel not found');
-  }
 });
 
 // Interaction create event
 client.on('interactionCreate', async interaction => {
-  // Handle ticket interaction if it's a select menu
-  if (interaction.isSelectMenu()) {
-    return handleTicketInteraction(interaction);
-  }
-
   if (!interaction.isCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
