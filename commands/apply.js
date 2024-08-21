@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, MessageActionRow, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require('discord.js');
 
-const applicationChannelId = 'YOUR_APPLICATION_CHANNEL_ID'; // Replace with your application channel ID
-const acceptRoleId = 'YOUR_ACCEPT_ROLE_ID'; // Replace with the role ID that has permission to accept applications
+const applicationChannelId = '1255162116126539786'; // Replace with your application channel ID
+const acceptRoleId = '1253347271718735882'; // Replace with the role ID that has permission to accept applications
 
 module.exports = {
     data: new SlashCommandBuilder()
