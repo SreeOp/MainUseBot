@@ -1,9 +1,11 @@
-const { Client, GatewayIntentBits, Collection, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
 require('dotenv').config(); // Load environment variables
 
+// Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
 // Create a new client instance
@@ -34,7 +36,7 @@ client.once('ready', () => {
   setStatus(client);
 });
 
-// Interaction create event for commands
+// Interaction create event
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
@@ -42,6 +44,7 @@ client.on('interactionCreate', async interaction => {
 
   if (!command) return;
 
+  // Check if ALLOWED_ROLES is defined
   const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
   const memberRoles = interaction.member.roles.cache;
   const hasPermission = allowedRoles.some(role => memberRoles.has(role));
@@ -58,90 +61,6 @@ client.on('interactionCreate', async interaction => {
       await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
     } else {
       await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
-    }
-  }
-});
-
-// Interaction create event for buttons and modals
-client.on('interactionCreate', async interaction => {
-  if (interaction.isButton()) {
-    if (interaction.customId === 'apply_button') {
-      const modal = new ModalBuilder()
-          .setCustomId('staff_application')
-          .setTitle('Staff Application');
-
-      const realNameInput = new TextInputBuilder()
-          .setCustomId('real_name')
-          .setLabel('What is your Real Name?')
-          .setStyle(TextInputStyle.Short);
-
-      const characterNameInput = new TextInputBuilder()
-          .setCustomId('character_name')
-          .setLabel('What is your Character Name?')
-          .setStyle(TextInputStyle.Short);
-
-      const ageInput = new TextInputBuilder()
-          .setCustomId('age')
-          .setLabel('What is your Age?')
-          .setStyle(TextInputStyle.Short);
-
-      const emailInput = new TextInputBuilder()
-          .setCustomId('email')
-          .setLabel('What is your E-mail?')
-          .setStyle(TextInputStyle.Short);
-
-      const experienceInput = new TextInputBuilder()
-          .setCustomId('experience')
-          .setLabel('Explain Your STAFF-EXPERIENCE')
-          .setStyle(TextInputStyle.Paragraph);
-
-      modal.addComponents(
-          new ActionRowBuilder().addComponents(realNameInput),
-          new ActionRowBuilder().addComponents(characterNameInput),
-          new ActionRowBuilder().addComponents(ageInput),
-          new ActionRowBuilder().addComponents(emailInput),
-          new ActionRowBuilder().addComponents(experienceInput)
-      );
-
-      await interaction.showModal(modal);
-    }
-  } else if (interaction.isModalSubmit()) {
-    if (interaction.customId === 'staff_application') {
-      const realName = interaction.fields.getTextInputValue('real_name');
-      const characterName = interaction.fields.getTextInputValue('character_name');
-      const age = interaction.fields.getTextInputValue('age');
-      const email = interaction.fields.getTextInputValue('email');
-      const experience = interaction.fields.getTextInputValue('experience');
-
-      const applicationEmbed = new EmbedBuilder()
-          .setTitle('New Staff Application')
-          .addFields(
-              { name: 'Real Name', value: realName },
-              { name: 'Character Name', value: characterName },
-              { name: 'Age', value: age },
-              { name: 'E-mail', value: email },
-              { name: 'Experience', value: experience }
-          )
-          .setColor('#FF4D00');
-
-      const acceptButton = new ButtonBuilder()
-          .setCustomId('accept_application')
-          .setLabel('Accept')
-          .setStyle(ButtonStyle.Success);
-
-      const row = new ActionRowBuilder().addComponents(acceptButton);
-
-      const applicationChannel = interaction.guild.channels.cache.get('1255162116126539786'); // Replace with your channel ID
-      await applicationChannel.send({ embeds: [applicationEmbed], components: [row] });
-
-      await interaction.reply({ content: 'Application submitted!', ephemeral: true });
-    }
-  } else if (interaction.isButton()) {
-    if (interaction.customId === 'accept_application') {
-      const userId = interaction.message.embeds[0].fields.find(field => field.name === 'User ID').value;
-      const user = await client.users.fetch(userId);
-      await user.send('Congratulations! Your staff application has been accepted.');
-      await interaction.reply({ content: 'Application accepted and user notified.', ephemeral: true });
     }
   }
 });
