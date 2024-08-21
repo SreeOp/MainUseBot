@@ -98,7 +98,7 @@ client.on('interactionCreate', async interaction => {
 
         const row = new ActionRowBuilder().addComponents(acceptButton);
 
-        const applicationChannel = interaction.guild.channels.cache.get('CHANNEL_ID_HERE'); // Replace with your channel ID
+        const applicationChannel = interaction.guild.channels.cache.get('1255162116126539786'); // Replace with your channel ID
         await applicationChannel.send({ embeds: [applicationEmbed], components: [row] });
 
         await interaction.reply({ content: 'Application submitted!', ephemeral: true });
