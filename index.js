@@ -4,6 +4,8 @@ const path = require('path');
 const express = require('express');
 require('dotenv').config(); // Load environment variables
 
+const setStatus = require('./functions/setStatus');
+
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
