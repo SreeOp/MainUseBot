@@ -1,108 +1,118 @@
-const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, MessageActionRow, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require('discord.js');
-
-const applicationChannelId = '1255162116126539786'; // Replace with your application channel ID
-const acceptRoleId = '1253347271718735882'; // Replace with the role ID that has permission to accept applications
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('apply')
-        .setDescription('Start the staff application process'),
+        .setDescription('Apply for staff position'),
 
     async execute(interaction) {
-        // Create the modal
+        // Step 1: Send an image with "Apply" button
+        const applyEmbed = new EmbedBuilder()
+            .setTitle('Staff Application')
+            .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=66c6a474&is=66c552f4&hm=469130726847260794179cc767a2a9ba509d6e8ec534532189435011894f653e&') // Replace with the actual image URL
+            .setColor('#0099ff');
+
+        const applyButton = new ButtonBuilder()
+            .setCustomId('apply_button')
+            .setLabel('Apply')
+            .setStyle(ButtonStyle.Success);
+
+        const row = new ActionRowBuilder().addComponents(applyButton);
+
+        await interaction.reply({ embeds: [applyEmbed], components: [row], ephemeral: false });
+    },
+};
+
+// Step 2: Handle the "Apply" button interaction
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isButton()) return;
+
+    if (interaction.customId === 'apply_button') {
         const modal = new ModalBuilder()
-            .setCustomId('staffApplication')
+            .setCustomId('staff_application')
             .setTitle('Staff Application');
 
-        // Add questions to the modal
-        const nameInput = new TextInputBuilder()
-            .setCustomId('realName')
+        const realNameInput = new TextInputBuilder()
+            .setCustomId('real_name')
             .setLabel('What is your Real Name?')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
+            .setStyle(TextInputStyle.Short);
 
         const characterNameInput = new TextInputBuilder()
-            .setCustomId('characterName')
+            .setCustomId('character_name')
             .setLabel('What is your Character Name?')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
+            .setStyle(TextInputStyle.Short);
+
+        const ageInput = new TextInputBuilder()
+            .setCustomId('age')
+            .setLabel('What is your Age?')
+            .setStyle(TextInputStyle.Short);
 
         const emailInput = new TextInputBuilder()
             .setCustomId('email')
-            .setLabel('What is your Email?')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
+            .setLabel('What is your E-mail?')
+            .setStyle(TextInputStyle.Short);
 
         const experienceInput = new TextInputBuilder()
-            .setCustomId('staffExperience')
-            .setLabel('Explain your STAFF-EXPERIENCE')
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(true);
+            .setCustomId('experience')
+            .setLabel('Explain Your STAFF-EXPERIENCE')
+            .setStyle(TextInputStyle.Paragraph);
 
-        // Add the inputs to the modal
         modal.addComponents(
-            new ActionRowBuilder().addComponents(nameInput),
+            new ActionRowBuilder().addComponents(realNameInput),
             new ActionRowBuilder().addComponents(characterNameInput),
+            new ActionRowBuilder().addComponents(ageInput),
             new ActionRowBuilder().addComponents(emailInput),
             new ActionRowBuilder().addComponents(experienceInput)
         );
 
-        // Show the modal to the user
         await interaction.showModal(modal);
-    },
+    }
+});
 
-    async handleSubmission(interaction) {
-        const realName = interaction.fields.getTextInputValue('realName');
-        const characterName = interaction.fields.getTextInputValue('characterName');
+// Step 3: Handle the form submission and send to specified channel
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isModalSubmit()) return;
+
+    if (interaction.customId === 'staff_application') {
+        const realName = interaction.fields.getTextInputValue('real_name');
+        const characterName = interaction.fields.getTextInputValue('character_name');
+        const age = interaction.fields.getTextInputValue('age');
         const email = interaction.fields.getTextInputValue('email');
-        const staffExperience = interaction.fields.getTextInputValue('staffExperience');
+        const experience = interaction.fields.getTextInputValue('experience');
 
-        // Create the embed for the application
-        const embed = new EmbedBuilder()
+        const applicationEmbed = new EmbedBuilder()
             .setTitle('New Staff Application')
-            .setColor(0x0099ff) // Customize your color
             .addFields(
                 { name: 'Real Name', value: realName },
                 { name: 'Character Name', value: characterName },
-                { name: 'Email', value: email },
-                { name: 'Staff Experience', value: staffExperience }
+                { name: 'Age', value: age },
+                { name: 'E-mail', value: email },
+                { name: 'Experience', value: experience }
             )
-            .setTimestamp();
+            .setColor('#FF4D00');
 
-        // Create the accept button
         const acceptButton = new ButtonBuilder()
-            .setCustomId('acceptApplication')
+            .setCustomId('accept_application')
             .setLabel('Accept')
             .setStyle(ButtonStyle.Success);
 
-        const row = new MessageActionRow().addComponents(acceptButton);
+        const row = new ActionRowBuilder().addComponents(acceptButton);
 
-        // Send the application to the application channel
-        const applicationChannel = interaction.guild.channels.cache.get(applicationChannelId);
-        if (applicationChannel) {
-            await applicationChannel.send({ embeds: [embed], components: [row] });
-        }
+        const applicationChannel = interaction.guild.channels.cache.get('CHANNEL_ID_HERE'); // Replace with your channel ID
+        await applicationChannel.send({ embeds: [applicationEmbed], components: [row] });
 
-        await interaction.reply({ content: 'Your application has been submitted!', ephemeral: true });
-    },
-
-    async handleAccept(interaction) {
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-            return interaction.reply({ content: 'You do not have permission to accept applications.', ephemeral: true });
-        }
-
-        // Retrieve the application data and user ID
-        const applicationMessage = interaction.message;
-        const applicantId = applicationMessage.interaction.user.id;
-
-        // Send a DM to the user
-        try {
-            const user = await interaction.client.users.fetch(applicantId);
-            await user.send('Congratulations! Your staff application has been accepted.');
-            await interaction.update({ content: 'Application accepted and user notified.', components: [] });
-        } catch (error) {
-            console.error('Failed to send DM:', error);
-            await interaction.reply({ content: 'Failed to send DM to the user.', ephemeral: true });
-        }
+        await interaction.reply({ content: 'Application submitted!', ephemeral: true });
     }
-};
+});
+
+// Step 4: Handle the "Accept" button interaction
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isButton()) return;
+
+    if (interaction.customId === 'accept_application') {
+        const userId = interaction.message.embeds[0].fields.find(field => field.name === 'User ID').value;
+        const user = await client.users.fetch(userId);
+        await user.send('Congratulations! Your staff application has been accepted.');
+        await interaction.reply({ content: 'Application accepted and user notified.', ephemeral: true });
+    }
+});
