@@ -18,6 +18,10 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
+const logMessages = require('./functions/logMessages');
+logMessages(client); // Assuming you pass your bot client here
+
+
 // Set commands to the collection
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
