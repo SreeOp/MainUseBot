@@ -1,4 +1,3 @@
-
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -8,8 +7,18 @@ require('dotenv').config(); // Load environment variables
 // Import the setStatus function
 const setStatus = require('./functions/setStatus');
 
+// Import message logging functionality
+const logMessages = require('./functions/logMessages');
+
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ 
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,     // Required to log messages
+    GatewayIntentBits.MessageContent,    // Required to access message content
+    GatewayIntentBits.GuildMessageReactions // In case you want to track reactions in the future
+  ] 
+});
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -17,10 +26,6 @@ client.commands = new Collection();
 // Command files
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-const logMessages = require('./functions/logMessages');
-logMessages(client); // Assuming you pass your bot client here
-
 
 // Set commands to the collection
 for (const file of commandFiles) {
@@ -38,6 +43,9 @@ client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
   // Set the bot's status
   setStatus(client);
+  
+  // Call logMessages function to start logging message events
+  logMessages(client);
 });
 
 // Interaction create event
