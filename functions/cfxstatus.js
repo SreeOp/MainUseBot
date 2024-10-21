@@ -1,6 +1,6 @@
 const { EmbedBuilder, ChannelType } = require('discord.js');
-const axios = require('axios'); // For fetching data from the API
-const cron = require('node-cron'); // For scheduling regular updates
+const axios = require('axios');
+const cron = require('node-cron'); // For scheduling the task
 
 module.exports = (client) => {
   const channelId = '1297917830527979531'; // Replace with your target channel ID
@@ -16,13 +16,32 @@ module.exports = (client) => {
       const componentsResponse = await axios.get('https://status.cfx.re/api/v2/components.json');
       const components = componentsResponse.data.components;
 
+      // Mapping component names to display names for clarity
+      const componentNames = {
+        'CnL': 'CnL',
+        'Forums': 'Forums',
+        'Games': 'Games',
+        'FiveM': 'FiveM',
+        'Game Services': 'Game Services',
+        'Policy': 'Policy',
+        'Server List Frontend': 'Server List Frontend',
+        'RedM': 'RedM',
+        'Web Services': 'Web Services',
+        'Keymaster': 'Keymaster',
+        'Runtime': 'Runtime',
+        'Cfx.re Platform Server (FXServer)': 'Cfx.re Platform Server (FXServer)',
+        'IDMS': 'IDMS',
+      };
+
       // Build the components status string
       const componentsStatus = components.map(component => {
+        // Get custom name if mapped
+        const componentName = componentNames[component.name] || component.name;
         const statusEmoji = component.status === 'operational' ? '🟢' : '🔴';
-        return `${statusEmoji} ${component.name}: ${component.status}`;
+        return `${statusEmoji} ${componentName}: ${component.status}`;
       }).join('\n');
 
-      // Create the embed
+      // Create the embed message
       const statusEmbed = new EmbedBuilder()
         .setColor(overallStatus.includes('🟢') ? '#00FF00' : '#FF0000') // Set green if operational, red if down
         .setTitle('🦋 Cfx.re Status')
@@ -69,6 +88,6 @@ module.exports = (client) => {
     console.log('Checking and updating Cfx.re status...');
     sendStatusMessage();
   }, {
-    timezone: "Asia/Kolkata" // Use the correct timezone for your region
+    timezone: "Asia/Kolkata" // Set your timezone, e.g., 'Asia/Kolkata' for India
   });
 };
