@@ -8,6 +8,8 @@ module.exports = (client) => {
   // Function to fetch the overall status and components data
   const getStatusData = async () => {
     try {
+      console.log('Fetching status data...');
+      
       // Fetch the overall status from the status API
       const overallResponse = await axios.get('https://status.cfx.re/api/v2/status.json');
       const overallStatus = overallResponse.data.status.indicator === 'none' ? '🟢 All systems operational' : '🔴 Some systems are down';
@@ -52,6 +54,7 @@ module.exports = (client) => {
         )
         .setTimestamp();
 
+      console.log('Successfully fetched status data');
       return statusEmbed;
 
     } catch (error) {
@@ -63,18 +66,23 @@ module.exports = (client) => {
   // Function to send the status message to the channel
   const sendStatusMessage = async () => {
     try {
+      console.log('Fetching channel...');
       const channel = await client.channels.fetch(channelId);
+      console.log('Channel fetched:', channel?.name);
+
       if (!channel || channel.type !== ChannelType.GuildText) {
         console.error('Invalid channel or channel type.');
         return;
       }
 
+      console.log('Fetching status embed...');
       const embed = await getStatusData();
       if (embed) {
-        // Send the embed message or update it
+        console.log('Sending status message...');
         await channel.send({ embeds: [embed] });
         console.log('Cfx.re status message sent successfully.');
       } else {
+        console.log('Failed to retrieve status, sending error message...');
         await channel.send('Failed to retrieve Cfx.re status.');
       }
 
