@@ -4,12 +4,13 @@ const path = require('path');
 const express = require('express');
 require('dotenv').config(); // Load environment variables
 
-// Import the setStatus function and warScheduler
+// Import the setStatus function, warScheduler, and welcome function
 const setStatus = require('./functions/setStatus');
 const warScheduler = require('./functions/warScheduler');
+const welcome = require('./functions/welcome'); // Add this line to import the welcome function
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] }); // Make sure to include GuildMembers intent to detect new members
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -32,11 +33,15 @@ deployCommands().catch(console.error);
 // Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
+  
   // Set the bot's status
   setStatus(client);
   
   // Initialize war scheduler
   warScheduler(client);
+
+  // Initialize welcome message functionality
+  welcome(client);  // Add this line to call the welcome function
 });
 
 // Interaction create event
