@@ -4,21 +4,12 @@ const path = require('path');
 const express = require('express');
 require('dotenv').config(); // Load environment variables
 
-// Import the setStatus function
+// Import the setStatus function and warScheduler
 const setStatus = require('./functions/setStatus');
-
-// Import message logging functionality
-const logMessages = require('./functions/logMessages');
+const warScheduler = require('./functions/warScheduler');
 
 // Create a new client instance
-const client = new Client({ 
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,     // Required to log messages
-    GatewayIntentBits.MessageContent,    // Required to access message content
-    GatewayIntentBits.GuildMessageReactions // In case you want to track reactions in the future
-  ] 
-});
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -44,8 +35,8 @@ client.once('ready', () => {
   // Set the bot's status
   setStatus(client);
   
-  // Call logMessages function to start logging message events
-  logMessages(client);
+  // Initialize war scheduler
+  warScheduler(client);
 });
 
 // Interaction create event
