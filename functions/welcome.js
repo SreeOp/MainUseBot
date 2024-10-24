@@ -1,10 +1,13 @@
-const { createCanvas, loadImage } = require('canvas');
+const { registerFont, createCanvas, loadImage } = require('canvas');
 const { AttachmentBuilder, ChannelType } = require('discord.js');
-const axios = require('axios'); // To fetch the background image and avatar
+const axios = require('axios'); // To fetch the user's avatar
+
+// Load a custom font if needed
+registerFont('./path-to-font/YourCustomFont.ttf', { family: 'CustomFont' });
 
 module.exports = async (client) => {
-  const channelId = '1297917830527979531'; // Replace with the ID of your welcome channel
-  const backgroundImageUrl = 'https://imgur.com/a/1nJ13k6'; // Replace with your image URL
+  const channelId = '1259527025446621224'; // Replace with the ID of your welcome channel
+  const backgroundImage = './path-to-image/background-image.png'; // Path to your custom background image
 
   client.on('guildMemberAdd', async (member) => {
     try {
@@ -16,22 +19,19 @@ module.exports = async (client) => {
         return;
       }
 
-      // Fetch the user's avatar
+      // Fetch user's avatar
       const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: 512 });
       const { data: avatarBuffer } = await axios.get(avatarUrl, { responseType: 'arraybuffer' });
-
-      // Fetch the background image from URL
-      const { data: backgroundBuffer } = await axios.get(backgroundImageUrl, { responseType: 'arraybuffer' });
 
       // Create canvas
       const canvas = createCanvas(564, 188); // Use your custom image size here
       const ctx = canvas.getContext('2d');
 
-      // Load the background image
-      const background = await loadImage(backgroundBuffer);
+      // Load background image
+      const background = await loadImage(backgroundImage);
       ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-      // Load the user's avatar
+      // Load user's avatar
       const avatar = await loadImage(avatarBuffer);
       ctx.save();
       // Draw circular avatar
@@ -42,15 +42,15 @@ module.exports = async (client) => {
       ctx.drawImage(avatar, 50, 44, 100, 100); // Adjust dimensions as necessary
       ctx.restore();
 
-      // Write the user's name
-      ctx.font = '28px sans-serif'; // You can set a custom font if needed
-      ctx.fillStyle = '#ffffff'; // Set the text color
+      // Write user name
+      ctx.font = '28px CustomFont'; // Use the font you registered above
+      ctx.fillStyle = '#ffffff'; // Set text color
       ctx.fillText(`Welcome, ${member.user.username}!`, 180, 94); // Adjust position to fit your design
 
-      // Convert the canvas to a buffer
+      // Convert canvas to buffer
       const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'welcome-image.png' });
 
-      // Send the welcome message with the image
+      // Send welcome message with the image
       await channel.send({
         content: `Welcome to the server, ${member.user}! 🎉`,
         files: [attachment],
