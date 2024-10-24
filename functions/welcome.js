@@ -4,7 +4,7 @@ const axios = require('axios'); // To fetch the background image and avatar
 
 module.exports = async (client) => {
   const channelId = '1297917830527979531'; // Replace with the ID of your welcome channel
-  const backgroundImageUrl = 'https://cdn.discordapp.com/attachments/1259527025446621224/1298972302117048350/Zyronix.png?ex=671b81ba&is=671a303a&hm=ad70ea80003aad088223297d312ecbb3cfd844272ded320f9a1fcb90c6dcb392&'; // Replace with your image URL
+  const backgroundImageUrl = 'https://imgur.com/a/1nJ13k6'; // Replace with your image URL
 
   client.on('guildMemberAdd', async (member) => {
     try {
