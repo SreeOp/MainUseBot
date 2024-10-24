@@ -7,7 +7,7 @@ registerFont('./path-to-font/YourCustomFont.ttf', { family: 'CustomFont' });
 
 module.exports = async (client) => {
   const channelId = '1259527025446621224'; // Replace with the ID of your welcome channel
-  const backgroundImage = './path-to-image/background-image.png'; // Path to your custom background image
+  const backgroundImage = './images/Welcome.png'; // Path to your custom background image
 
   client.on('guildMemberAdd', async (member) => {
     try {
