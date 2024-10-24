@@ -3,7 +3,7 @@ const { AttachmentBuilder, ChannelType } = require('discord.js');
 const axios = require('axios'); // To fetch the user's avatar
 
 // Load a custom font if needed
-registerFont('./path-to-font/YourCustomFont.ttf', { family: 'CustomFont' });
+registerFont('./fonts/Square.ttf', { family: 'CustomFont' });
 
 module.exports = async (client) => {
   const channelId = '1259527025446621224'; // Replace with the ID of your welcome channel
