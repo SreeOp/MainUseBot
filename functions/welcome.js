@@ -1,64 +1,50 @@
-const { registerFont, createCanvas, loadImage } = require('canvas');
-const { AttachmentBuilder, ChannelType } = require('discord.js');
-const axios = require('axios'); // To fetch the user's avatar
+const Canvas = require('canvas');
+const { AttachmentBuilder } = require('discord.js');
 
-// Load a custom font if needed
-registerFont('./fonts/Square.ttf', { family: 'CustomFont' });
-
-module.exports = async (client) => {
-  const channelId = '1259527025446621224'; // Replace with the ID of your welcome channel
-  const backgroundImage = './images/Welcome.png'; // Path to your custom background image
-
+module.exports = (client) => {
   client.on('guildMemberAdd', async (member) => {
-    try {
-      // Fetch the target channel
-      const channel = await client.channels.fetch(channelId);
+    const channelId = '1297917830527979531'; // Replace with the channel ID where the welcome message should be sent
+    const channel = member.guild.channels.cache.get(channelId);
 
-      if (!channel || channel.type !== ChannelType.GuildText) {
-        console.error('Invalid channel or channel type.');
-        return;
-      }
+    if (!channel) return console.error('Channel not found.');
 
-      // Fetch user's avatar
-      const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: 512 });
-      const { data: avatarBuffer } = await axios.get(avatarUrl, { responseType: 'arraybuffer' });
+    // Load the custom background image
+    const background = await Canvas.loadImage('./assests/background-image.png'); // Replace with the path to your background image
 
-      // Create canvas
-      const canvas = createCanvas(564, 188); // Use your custom image size here
-      const ctx = canvas.getContext('2d');
+    // Create a canvas and set its dimensions (use the dimensions of your background image)
+    const canvas = Canvas.createCanvas(background.width, background.height);
+    const context = canvas.getContext('2d');
 
-      // Load background image
-      const background = await loadImage(backgroundImage);
-      ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+    // Draw the background image onto the canvas
+    context.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-      // Load user's avatar
-      const avatar = await loadImage(avatarBuffer);
-      ctx.save();
-      // Draw circular avatar
-      ctx.beginPath();
-      ctx.arc(100, 94, 50, 0, Math.PI * 2, true); // Adjust coordinates to fit your design
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatar, 50, 44, 100, 100); // Adjust dimensions as necessary
-      ctx.restore();
+    // Draw the user's avatar
+    const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'png' }));
+    const avatarSize = 128; // Define the size of the avatar
+    const avatarX = 100; // X-coordinate for the avatar placement
+    const avatarY = 100; // Y-coordinate for the avatar placement
 
-      // Write user name
-      ctx.font = '28px CustomFont'; // Use the font you registered above
-      ctx.fillStyle = '#ffffff'; // Set text color
-      ctx.fillText(`Welcome, ${member.user.username}!`, 180, 94); // Adjust position to fit your design
+    // Draw the user's avatar with a circular mask
+    context.save();
+    context.beginPath();
+    context.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2, true);
+    context.closePath();
+    context.clip();
+    context.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+    context.restore();
 
-      // Convert canvas to buffer
-      const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'welcome-image.png' });
+    // Add the user's name onto the image
+    context.font = '40px sans-serif';
+    context.fillStyle = '#ffffff'; // White color for the text
+    context.fillText(`Welcome, ${member.user.username}!`, 280, 150); // Customize the text position
 
-      // Send welcome message with the image
-      await channel.send({
-        content: `Welcome to the server, ${member.user}! 🎉`,
-        files: [attachment],
-      });
+    // Convert the canvas to a buffer and send it as an attachment in the channel
+    const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'welcome-image.png' });
 
-      console.log(`Welcome message sent to ${member.user.username}`);
-    } catch (error) {
-      console.error('Error sending the welcome message:', error);
-    }
+    // Send the welcome message with the image, mentioning the user
+    await channel.send({
+      content: `Welcome to the server, <@${member.user.id}>!`,
+      files: [attachment],
+    });
   });
 };
