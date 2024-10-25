@@ -23,8 +23,8 @@ module.exports = (client) => {
     const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'png' }));
 
     // Updated avatar size and coordinates
-    const avatarWidth = 71; // Width of the avatar
-    const avatarHeight = 67; // Height of the avatar
+    const avatarWidth = 200; // Width of the avatar
+    const avatarHeight = 150; // Height of the avatar
     const avatarX = 1037; // X-coordinate for the avatar placement (left)
     const avatarY = 628; // Y-coordinate for the avatar placement (top)
 
