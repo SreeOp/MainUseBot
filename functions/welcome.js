@@ -26,7 +26,7 @@ module.exports = (client) => {
     const avatarWidth = 400; // Width of the avatar
     const avatarHeight = 300; // Height of the avatar
     const avatarX = 1037; // X-coordinate for the avatar placement (left)
-    const avatarY = 590; // Y-coordinate for the avatar placement (top)
+    const avatarY = 390; // Y-coordinate for the avatar placement (top)
 
     // Draw the user's avatar with updated coordinates and size
     context.save();
