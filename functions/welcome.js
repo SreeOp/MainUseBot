@@ -43,7 +43,7 @@ module.exports = (client) => {
     context.fillText(
       `${member.user.username}`, 
       1433,  // X-coordinate (left)
-      516,  // Y-coordinate (top)
+      536,  // Y-coordinate (top)
       300   // Max text width
     );
 
