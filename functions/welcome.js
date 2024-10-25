@@ -1,5 +1,6 @@
 const Canvas = require('canvas');
 const { AttachmentBuilder } = require('discord.js');
+const path = require('path');
 
 module.exports = (client) => {
   client.on('guildMemberAdd', async (member) => {
@@ -8,8 +9,8 @@ module.exports = (client) => {
 
     if (!channel) return console.error('Channel not found.');
 
-    // Load the custom background image
-    const background = await Canvas.loadImage('./assests/background-image.png'); // Replace with the path to your background image
+    // Load the custom background image with the correct file path
+    const background = await Canvas.loadImage(path.join(__dirname, '../assets/background-image.png'));
 
     // Create a canvas and set its dimensions (use the dimensions of your background image)
     const canvas = Canvas.createCanvas(background.width, background.height);
