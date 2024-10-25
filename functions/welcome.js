@@ -42,9 +42,9 @@ module.exports = (client) => {
     context.fillStyle = '#ffffff'; // White color for the text
     context.fillText(
       `${member.user.username}`, 
-      271.52,  // X-coordinate (left)
-      121.89,  // Y-coordinate (top)
-      199.06   // Max text width
+      1433,  // X-coordinate (left)
+      526,  // Y-coordinate (top)
+      300   // Max text width
     );
 
     // Convert the canvas to a buffer and send it as an attachment in the channel
