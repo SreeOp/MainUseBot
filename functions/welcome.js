@@ -19,32 +19,40 @@ module.exports = (client) => {
     // Draw the background image onto the canvas
     context.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-    // Draw the user's avatar
+    // Load the user's avatar
     const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'png' }));
-    const avatarSize = 128; // Define the size of the avatar
-    const avatarX = 100; // X-coordinate for the avatar placement
-    const avatarY = 100; // Y-coordinate for the avatar placement
 
-    // Draw the user's avatar with a circular mask
+    // Updated avatar size and coordinates
+    const avatarWidth = 71.29785156250043; // Width of the avatar
+    const avatarHeight = 67.59545898437504; // Height of the avatar
+    const avatarX = 252.83; // X-coordinate for the avatar placement (left)
+    const avatarY = 98.56; // Y-coordinate for the avatar placement (top)
+
+    // Draw the user's avatar with updated coordinates and size
     context.save();
     context.beginPath();
-    context.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2, true);
+    context.arc(avatarX + avatarWidth / 2, avatarY + avatarHeight / 2, Math.min(avatarWidth, avatarHeight) / 2, 0, Math.PI * 2, true);
     context.closePath();
     context.clip();
-    context.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+    context.drawImage(avatar, avatarX, avatarY, avatarWidth, avatarHeight);
     context.restore();
 
-    // Add the user's name onto the image
-    context.font = '40px sans-serif';
+    // Add only the user's name onto the image
+    context.font = '21px sans-serif'; // Updated text size
     context.fillStyle = '#ffffff'; // White color for the text
-    context.fillText(`Welcome, ${member.user.username}!`, 280, 150); // Customize the text position
+    context.fillText(
+      `${member.user.username}`, 
+      271.52,  // X-coordinate (left)
+      121.89,  // Y-coordinate (top)
+      199.06   // Max text width
+    );
 
     // Convert the canvas to a buffer and send it as an attachment in the channel
     const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'welcome-image.png' });
 
     // Send the welcome message with the image, mentioning the user
     await channel.send({
-      content: `Welcome to the server, <@${member.user.id}>!`,
+      content: `<@${member.user.id}> has joined the server!`,
       files: [attachment],
     });
   });
