@@ -38,7 +38,7 @@ module.exports = (client) => {
     context.restore();
 
     // Add only the user's name onto the image
-    context.font = '21px sans-serif'; // Updated text size
+    context.font = '51px sans-serif'; // Updated text size
     context.fillStyle = '#ffffff'; // White color for the text
     context.fillText(
       `${member.user.username}`, 
