@@ -3,7 +3,7 @@ const { AttachmentBuilder } = require('discord.js');
 
 module.exports = (client) => {
   client.on('guildMemberAdd', async (member) => {
-    const channelId = '1297917830527979531'; // Replace with the channel ID where the welcome message should be sent
+    const channelId = '1297917830527979531'; // Replace with your target channel ID
     const channel = member.guild.channels.cache.get(channelId);
 
     if (!channel) return console.error('Channel not found.');
@@ -11,10 +11,11 @@ module.exports = (client) => {
     // Define the URL for the background image (Discord media URL)
     const backgroundUrl = 'https://cdn.discordapp.com/attachments/1056903195961610275/1299665226802663465/background-image.png?ex=671e0710&is=671cb590&hm=d9c5f4a746caca90a2b37d1522fb6c0f1175312224df3b0abe7a34daccb86dac&'; // Replace with your image URL
 
-    // Load the custom background image from the URL
+    // Load the custom background image from the URL using arrayBuffer
     const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
     const response = await fetch(backgroundUrl);
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     const background = await Canvas.loadImage(buffer);
 
     // Create a canvas and set its dimensions (use the dimensions of your background image)
