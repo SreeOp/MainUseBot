@@ -1,6 +1,6 @@
 const Canvas = require('canvas');
 const { AttachmentBuilder } = require('discord.js');
-const path = require('path');
+const fetch = require('node-fetch');
 
 module.exports = (client) => {
   client.on('guildMemberAdd', async (member) => {
@@ -9,8 +9,13 @@ module.exports = (client) => {
 
     if (!channel) return console.error('Channel not found.');
 
-    // Load the custom background image with the correct file path
-    const background = await Canvas.loadImage(path.join(__dirname, '../assets/welcomeimg.png'));
+    // Define the URL for the background image (Discord media URL)
+    const backgroundUrl = 'https://cdn.discordapp.com/attachments/1056903195961610275/1299665226802663465/background-image.png?ex=671e0710&is=671cb590&hm=d9c5f4a746caca90a2b37d1522fb6c0f1175312224df3b0abe7a34daccb86dac&'; // Replace with your image URL
+
+    // Load the custom background image from the URL
+    const response = await fetch(backgroundUrl);
+    const buffer = await response.buffer();
+    const background = await Canvas.loadImage(buffer);
 
     // Create a canvas and set its dimensions (use the dimensions of your background image)
     const canvas = Canvas.createCanvas(background.width, background.height);
@@ -23,28 +28,35 @@ module.exports = (client) => {
     const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'png' }));
 
     // Updated avatar size and coordinates
-    const avatarWidth = 400; // Width of the avatar
-    const avatarHeight = 300; // Height of the avatar
-    const avatarX = 1037; // X-coordinate for the avatar placement (left)
-    const avatarY = 390; // Y-coordinate for the avatar placement (top)
+    const avatarWidth = 71.3;
+    const avatarHeight = 67.6;
+    const avatarX = 252.83; // X-coordinate for the avatar placement (left)
+    const avatarY = 98.56; // Y-coordinate for the avatar placement (top)
 
     // Draw the user's avatar with updated coordinates and size
     context.save();
     context.beginPath();
-    context.arc(avatarX + avatarWidth / 2, avatarY + avatarHeight / 2, Math.min(avatarWidth, avatarHeight) / 2, 0, Math.PI * 2, true);
+    context.arc(
+      avatarX + avatarWidth / 2,
+      avatarY + avatarHeight / 2,
+      Math.min(avatarWidth, avatarHeight) / 2,
+      0,
+      Math.PI * 2,
+      true
+    );
     context.closePath();
     context.clip();
     context.drawImage(avatar, avatarX, avatarY, avatarWidth, avatarHeight);
     context.restore();
 
     // Add only the user's name onto the image
-    context.font = '51px sans-serif'; // Updated text size
+    context.font = '21px sans-serif'; // Updated text size
     context.fillStyle = '#ffffff'; // White color for the text
     context.fillText(
       `${member.user.username}`, 
-      1433,  // X-coordinate (left)
-      546,  // Y-coordinate (top)
-      300   // Max text width
+      271.52,  // X-coordinate (left)
+      121.89,  // Y-coordinate (top)
+      199.06   // Max text width
     );
 
     // Convert the canvas to a buffer and send it as an attachment in the channel
