@@ -1,6 +1,5 @@
 const Canvas = require('canvas');
 const { AttachmentBuilder } = require('discord.js');
-const fetch = require('node-fetch');
 
 module.exports = (client) => {
   client.on('guildMemberAdd', async (member) => {
@@ -13,6 +12,7 @@ module.exports = (client) => {
     const backgroundUrl = 'https://cdn.discordapp.com/attachments/1056903195961610275/1299665226802663465/background-image.png?ex=671e0710&is=671cb590&hm=d9c5f4a746caca90a2b37d1522fb6c0f1175312224df3b0abe7a34daccb86dac&'; // Replace with your image URL
 
     // Load the custom background image from the URL
+    const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
     const response = await fetch(backgroundUrl);
     const buffer = await response.buffer();
     const background = await Canvas.loadImage(buffer);
