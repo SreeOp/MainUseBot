@@ -21,7 +21,7 @@ const radius = 100;
   ctx.arc(1598, 250, radius, 0, Math.PI * 2, true);
   ctx.closePath();
   ctx.clip();
-  ctx.drawImage(avatar, 1071 - radius, 597 - radius, radius * 2, radius * 2);
+  ctx.drawImage(avatar, 1071  radius, 597  radius, radius * 2, radius * 2);
   ctx.restore();
 
     ctx.fillStyle = 'white';
