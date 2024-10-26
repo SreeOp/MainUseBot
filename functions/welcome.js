@@ -7,9 +7,9 @@ module.exports = (client) => {
 
   client.on('guildMemberAdd', async (member) => {
        
-    const frame = canvas.createCanvas(2000, 647);
+    const frame = canvas.createCanvas(2000, 932);
     const ctx = frame.getContext('2d');
-const bg = await canvas.loadImage('https://cdn.discordapp.com/attachments/1056903195961610275/1299681884833579058/file.png?ex=671e1694&is=671cc514&hm=5564987c8d3d12ef38b25f381c10716c658a39d0e53cbc37a430b150ec6ba4a4&');
+const bg = await canvas.loadImage('https://cdn.discordapp.com/attachments/1056903195961610275/1299665226802663465/background-image.png?ex=671e0710&is=671cb590&hm=d9c5f4a746caca90a2b37d1522fb6c0f1175312224df3b0abe7a34daccb86dac&');
 ctx.drawImage(bg, 0, 0, frame.width, frame.height);
 
       const username = member.user.username;
@@ -31,7 +31,7 @@ const radius = 100;
     const attachment = new Discord.AttachmentBuilder(await frame.encode('png'), 'welcome-image.png');
 
     const welcomeChannel = client.channels.cache.get(welcomeChannelId);
-    welcomeChannel.send({ content: `Welcome to tts, ${member}!`, files: [attachment]});
+    welcomeChannel.send({ content: `Welcome to FarX, ${member}!`, files: [attachment]});
   });
 
 };
