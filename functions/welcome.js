@@ -10,7 +10,7 @@ module.exports = (client) => {
     if (!channel) return console.error('Channel not found.');
 
     // Load the custom background image with the correct file path
-    const background = await Canvas.loadImage(path.join(__dirname, '../assets/welcomeimg.jpg'));
+    const background = await Canvas.loadImage(path.join(__dirname, '../assets/welcomeimg.png'));
 
     // Create a canvas and set its dimensions (use the dimensions of your background image)
     const canvas = Canvas.createCanvas(background.width, background.height);
