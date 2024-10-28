@@ -1,16 +1,18 @@
+// Import the required modules and functions
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
 require('dotenv').config(); // Load environment variables
 
-// Import the setStatus function, warScheduler, and welcome function
+// Import the setStatus function, warScheduler, welcome function, and cfxStatus function
 const setStatus = require('./functions/setStatus');
 const warScheduler = require('./functions/warScheduler');
-const welcome = require('./functions/welcome'); // Add this line to import the welcome function
+const welcome = require('./functions/welcome');
+const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] }); // Make sure to include GuildMembers intent to detect new members
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -41,7 +43,10 @@ client.once('ready', () => {
   warScheduler(client);
 
   // Initialize welcome message functionality
-  welcome(client);  // Add this line to call the welcome function
+  welcome(client);
+
+  // Call the Cfx.re status function to send status to a channel
+  cfxStatus(client); // Add this line to call the Cfx.re status function
 });
 
 // Interaction create event
