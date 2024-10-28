@@ -1,61 +1,49 @@
 const { EmbedBuilder, ChannelType } = require('discord.js');
 const axios = require('axios');
-const cron = require('node-cron'); // For scheduling the task
 
-module.exports = (client) => {
+module.exports = async (client) => {
   const channelId = '1297917830527979531'; // Replace with your target channel ID
 
-  // Function to fetch the overall status and components data
-  const getStatusData = async () => {
+  // Function to fetch and format the Cfx.re status data
+  const getCfxStatusEmbed = async () => {
     try {
-      console.log('Fetching status data...');
-      
-      // Fetch the overall status from the status API
-      const overallResponse = await axios.get('https://status.cfx.re/api/v2/status.json');
-      const overallStatus = overallResponse.data.status.indicator === 'none' ? '🟢 All systems operational' : '🔴 Some systems are down';
+      // Fetching data from Cfx.re status endpoints
+      const [statusResponse, componentsResponse] = await Promise.all([
+        axios.get('https://status.cfx.re/api/v2/status.json'),
+        axios.get('https://status.cfx.re/api/v2/components.json'),
+      ]);
 
-      // Fetch the components data from the components API
-      const componentsResponse = await axios.get('https://status.cfx.re/api/v2/components.json');
-      const components = componentsResponse.data.components;
+      const statusData = statusResponse.data.status;
+      const componentsData = componentsResponse.data.components;
 
-      // Mapping component names to display names for clarity
-      const componentNames = {
-        'CnL': 'CnL',
-        'Forums': 'Forums',
-        'Games': 'Games',
-        'FiveM': 'FiveM',
-        'Game Services': 'Game Services',
-        'Policy': 'Policy',
-        'Server List Frontend': 'Server List Frontend',
-        'RedM': 'RedM',
-        'Web Services': 'Web Services',
-        'Keymaster': 'Keymaster',
-        'Runtime': 'Runtime',
-        'Cfx.re Platform Server (FXServer)': 'Cfx.re Platform Server (FXServer)',
-        'IDMS': 'IDMS',
+      // Map component statuses with emojis
+      const statusEmoji = {
+        operational: '🟢',
+        degraded_performance: '🟡',
+        partial_outage: '🟠',
+        major_outage: '🔴',
+        under_maintenance: '🛠️',
       };
 
-      // Build the components status string
-      const componentsStatus = components.map(component => {
-        // Get custom name if mapped
-        const componentName = componentNames[component.name] || component.name;
-        const statusEmoji = component.status === 'operational' ? '🟢' : '🔴';
-        return `${statusEmoji} ${componentName}: ${component.status}`;
+      // Format component statuses
+      const componentsStatus = componentsData.map((component) => {
+        const emoji = statusEmoji[component.status] || '❔';
+        return `${emoji} ${component.name}: ${component.status.replace(/_/g, ' ')}`;
       }).join('\n');
 
-      // Create the embed message
-      const statusEmbed = new EmbedBuilder()
-        .setColor(overallStatus.includes('🟢') ? '#00FF00' : '#FF0000') // Set green if operational, red if down
+      // Create the embed
+      const embed = new EmbedBuilder()
+        .setColor('#FF4D00') // Set the embed color
         .setTitle('🦋 Cfx.re Status')
-        .setDescription('Live status update of Cfx.re services.')
+        .setDescription(statusData.description)
         .addFields(
-          { name: 'Overall Status', value: overallStatus },
+          { name: 'Overall Status', value: `${statusEmoji[statusData.indicator]} ${statusData.description}` },
           { name: 'Components Status', value: componentsStatus }
         )
+        .setFooter({ text: 'Cfx.re Status' })
         .setTimestamp();
 
-      console.log('Successfully fetched status data');
-      return statusEmbed;
+      return embed;
 
     } catch (error) {
       console.error('Error fetching Cfx.re status:', error);
@@ -63,26 +51,21 @@ module.exports = (client) => {
     }
   };
 
-  // Function to send the status message to the channel
+  // Function to send the embed message
   const sendStatusMessage = async () => {
     try {
-      console.log('Fetching channel...');
       const channel = await client.channels.fetch(channelId);
-      console.log('Channel fetched:', channel?.name);
-
       if (!channel || channel.type !== ChannelType.GuildText) {
         console.error('Invalid channel or channel type.');
         return;
       }
 
-      console.log('Fetching status embed...');
-      const embed = await getStatusData();
+      const embed = await getCfxStatusEmbed();
+
       if (embed) {
-        console.log('Sending status message...');
         await channel.send({ embeds: [embed] });
         console.log('Cfx.re status message sent successfully.');
       } else {
-        console.log('Failed to retrieve status, sending error message...');
         await channel.send('Failed to retrieve Cfx.re status.');
       }
 
@@ -91,11 +74,6 @@ module.exports = (client) => {
     }
   };
 
-  // Schedule the task to run every minute to check and update the status
-  cron.schedule('* * * * *', () => {
-    console.log('Checking and updating Cfx.re status...');
-    sendStatusMessage();
-  }, {
-    timezone: "Asia/Kolkata" // Set your timezone, e.g., 'Asia/Kolkata' for India
-  });
+  // Call this function when needed, such as on bot startup or on a schedule.
+  sendStatusMessage();
 };
