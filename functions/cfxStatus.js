@@ -1,79 +1,63 @@
-const { EmbedBuilder, ChannelType } = require('discord.js');
 const axios = require('axios');
+const { EmbedBuilder } = require('discord.js');
+const cron = require('node-cron');
 
 module.exports = async (client) => {
-  const channelId = '1297917830527979531'; // Replace with your target channel ID
+  const channelId = '1297917830527979531'; // Replace with the target channel ID
+  const onlineEmoji = '<a:online_emoji:1300482830731575348>'; // Replace with your animated online emoji
+  const offlineEmoji = '<a:offline_emoji:1300482784938164348>'; // Replace with your animated offline emoji
 
-  // Function to fetch and format the Cfx.re status data
-  const getCfxStatusEmbed = async () => {
-    try {
-      // Fetching data from Cfx.re status endpoints
-      const [statusResponse, componentsResponse] = await Promise.all([
-        axios.get('https://status.cfx.re/api/v2/status.json'),
-        axios.get('https://status.cfx.re/api/v2/components.json'),
-      ]);
-
-      const statusData = statusResponse.data.status;
-      const componentsData = componentsResponse.data.components;
-
-      // Map component statuses with emojis
-      const statusEmoji = {
-        operational: '🟢',
-        degraded_performance: '🟡',
-        partial_outage: '🟠',
-        major_outage: '🔴',
-        under_maintenance: '🛠️',
-      };
-
-      // Format component statuses
-      const componentsStatus = componentsData.map((component) => {
-        const emoji = statusEmoji[component.status] || '❔';
-        return `${emoji} ${component.name}: ${component.status.replace(/_/g, ' ')}`;
-      }).join('\n');
-
-      // Create the embed
-      const embed = new EmbedBuilder()
-        .setColor('#FF4D00') // Set the embed color
-        .setTitle('🦋 Cfx.re Status')
-        .setDescription(statusData.description)
-        .addFields(
-          { name: 'Overall Status', value: `${statusEmoji[statusData.indicator]} ${statusData.description}` },
-          { name: 'Components Status', value: componentsStatus }
-        )
-        .setFooter({ text: 'Cfx.re Status' })
-        .setTimestamp();
-
-      return embed;
-
-    } catch (error) {
-      console.error('Error fetching Cfx.re status:', error);
-      return null;
-    }
-  };
-
-  // Function to send the embed message
-  const sendStatusMessage = async () => {
+  // Function to fetch and send Cfx.re status
+  const fetchAndSendStatus = async () => {
     try {
       const channel = await client.channels.fetch(channelId);
-      if (!channel || channel.type !== ChannelType.GuildText) {
-        console.error('Invalid channel or channel type.');
-        return;
-      }
+      if (!channel) return console.error('Invalid channel.');
 
-      const embed = await getCfxStatusEmbed();
+      // Fetch status data
+      const [statusRes, componentsRes] = await Promise.all([
+        axios.get('https://status.cfx.re/api/v2/status.json'),
+        axios.get('https://status.cfx.re/api/v2/components.json')
+      ]);
 
-      if (embed) {
-        await channel.send({ embeds: [embed] });
-        console.log('Cfx.re status message sent successfully.');
+      const status = statusRes.data.status;
+      const components = componentsRes.data.components;
+
+      // Build the embed
+      const embed = new EmbedBuilder()
+        .setTitle(`${onlineEmoji} Cfx.re Status`)
+        .setDescription(status.description)
+        .setColor(status.indicator === 'none' ? '#00FF00' : '#FF0000')
+        .setTimestamp()
+        .setFooter({ text: 'Cfx.re status updated every minute' });
+
+      // Add each component's status to the embed
+      components.forEach(component => {
+        const emoji = component.status === 'operational' ? onlineEmoji : offlineEmoji;
+        embed.addFields({
+          name: `${emoji} ${component.name}`,
+          value: component.status.charAt(0).toUpperCase() + component.status.slice(1),
+          inline: true
+        });
+      });
+
+      // Find or send the status message
+      const messages = await channel.messages.fetch({ limit: 10 });
+      const botMessage = messages.find(msg => msg.author.id === client.user.id && msg.embeds[0]?.title.includes('Cfx.re Status'));
+
+      if (botMessage) {
+        await botMessage.edit({ embeds: [embed] });
+        console.log('Cfx.re status updated.');
       } else {
-        await channel.send('Failed to retrieve Cfx.re status.');
+        await channel.send({ embeds: [embed] });
+        console.log('Cfx.re status message sent.');
       }
-
     } catch (error) {
-      console.error('Error sending the status message:', error);
+      console.error('Error fetching or sending Cfx.re status:', error);
     }
   };
 
-  // Call this function when needed, such as on bot startup or on a schedule.
-  sendStatusMessage();
+  // Schedule the task to run every minute
+  cron.schedule('* * * * *', fetchAndSendStatus, {
+    timezone: 'Asia/Kolkata' // Set to Indian Standard Time
+  });
 };
