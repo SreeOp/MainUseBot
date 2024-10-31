@@ -5,14 +5,15 @@ const path = require('path');
 const express = require('express');
 require('dotenv').config(); // Load environment variables
 
-// Import the setStatus function, warScheduler, welcome function, and cfxStatus function
+// Import the setStatus function, warScheduler, welcome function, cfxStatus function, and voiceLogger
 const setStatus = require('./functions/setStatus');
 const warScheduler = require('./functions/warScheduler');
 const welcome = require('./functions/welcome');
 const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
+const voiceLogger = require('./functions/voiceLogger'); // Import voiceLogger
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] }); // Include GuildVoiceStates intent
 
 // Initialize commands collection
 client.commands = new Collection();
@@ -46,7 +47,10 @@ client.once('ready', () => {
   welcome(client);
 
   // Call the Cfx.re status function to send status to a channel
-  cfxStatus(client); // Add this line to call the Cfx.re status function
+  cfxStatus(client); 
+
+  // Initialize voiceLogger to track voice activity
+  voiceLogger(client); // Add this line to initialize the voiceLogger
 });
 
 // Interaction create event
