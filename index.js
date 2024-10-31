@@ -9,7 +9,6 @@ require('dotenv').config(); // Load environment variables
 const setStatus = require('./functions/setStatus');
 const warScheduler = require('./functions/warScheduler');
 const welcome = require('./functions/welcome');
-const voiceLeveling = require('./functions/voiceLeveling');
 const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
 
 // Create a new client instance
@@ -42,9 +41,6 @@ client.once('ready', () => {
   
   // Initialize war scheduler
   warScheduler(client);
-
-  // Initialize Leveling
-  voiceLeveling(client);
 
   // Initialize welcome message functionality
   welcome(client);
