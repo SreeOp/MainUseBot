@@ -24,8 +24,8 @@ module.exports = {
         .setStyle(ButtonStyle.Primary)
     );
 
-    // Send the embed with the button to the channel
-    await interaction.channel.send({ embeds: [embed], components: [reportButton] });
+    // Send the embed with the button
+    await interaction.reply({ embeds: [embed], components: [reportButton] });
 
     // Listener for button interaction
     const filter = i => i.customId === 'report_button' && i.user.id === interaction.user.id;
