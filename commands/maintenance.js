@@ -6,8 +6,8 @@ module.exports = {
     .setDescription('Set the server status to Online or Under Maintenance'),
   async execute(interaction) {
     const roleId = '1046786167644880946'; // Replace with your role ID
-    const onlineGif = 'https://imgur.com/SCTFORu'; // Replace with the URL of an animated GIF for online
-    const maintenanceGif = 'https://imgur.com/SCTFORu'; // Replace with the URL of an animated GIF for maintenance
+    const onlineGif = 'https://cdn.discordapp.com/attachments/1056903195961610275/1242682120141275176/standard_3.gif?ex=672ae3e9&is=67299269&hm=2ef583f9da3738c604d582db5d86f145815797880382c931b4b94f39f84d9522&'; // Replace with the URL of an animated GIF for online
+    const maintenanceGif = 'https://cdn.discordapp.com/attachments/1056903195961610275/1242682120141275176/standard_3.gif?ex=672ae3e9&is=67299269&hm=2ef583f9da3738c604d582db5d86f145815797880382c931b4b94f39f84d9522&'; // Replace with the URL of an animated GIF for maintenance
 
     // Create a select menu for choosing server status
     const statusSelectMenu = new ActionRowBuilder()
@@ -40,25 +40,29 @@ module.exports = {
     const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
 
     collector.on('collect', async i => {
+      let embed;
+      
       if (i.values[0] === 'online') {
         // Server Online selected
-        const onlineEmbed = new EmbedBuilder()
+        embed = new EmbedBuilder()
+          .setTitle('ZyroniX Developments')
           .setColor('#00FF00') // Green color for online
           .setDescription(`Server Has Been Restarted <@&${roleId}>`)
           .setImage(onlineGif);
-
-        await interaction.channel.send({ embeds: [onlineEmbed] });
-        await i.update({ content: 'Server status set to Online!', components: [] });
       } else if (i.values[0] === 'maintenance') {
         // Server Under Maintenance selected
-        const maintenanceEmbed = new EmbedBuilder()
+        embed = new EmbedBuilder()
+          .setTitle('ZyroniX Developments')
           .setColor('#FF0000') // Red color for maintenance
-          .setDescription(`Server Under Maintenance Please Wait Until Maintenance Is Over. **Do Not Try To Connect** <@&${roleId}>`)
+          .setDescription(`Server Under Maintenance. Please wait until maintenance is over. **Do not try to connect** <@&${roleId}>`)
           .setImage(maintenanceGif);
-
-        await interaction.channel.send({ embeds: [maintenanceEmbed] });
-        await i.update({ content: 'Server status set to Under Maintenance!', components: [] });
       }
+
+      // Send the embed message to the channel
+      await interaction.channel.send({ embeds: [embed] });
+      
+      // Acknowledge the selection by removing the menu (if desired)
+      await i.deferUpdate(); // This removes the select menu without causing an error
     });
 
     collector.on('end', collected => {
