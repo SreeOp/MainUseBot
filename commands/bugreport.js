@@ -24,7 +24,7 @@ module.exports = {
         .setStyle(ButtonStyle.Primary)
     );
 
-    // Send the embed with the button
+    // Send the embed with the button to the channel
     await interaction.channel.send({ embeds: [embed], components: [reportButton] });
 
     // Listener for button interaction
