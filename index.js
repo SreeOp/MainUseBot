@@ -10,7 +10,7 @@ const setStatus = require('./functions/setStatus');
 const warScheduler = require('./functions/warScheduler');
 const welcome = require('./functions/welcome');
 const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
-const voiceLogger = require('./functions/voiceLogger'); // Import voiceLogger
+const youtubealert = require('./functions/youtubealert'); // Import voiceLogger
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] }); // Include GuildVoiceStates intent
@@ -49,8 +49,8 @@ client.once('ready', () => {
   // Call the Cfx.re status function to send status to a channel
   cfxStatus(client); 
 
-  // Initialize voiceLogger to track voice activity
-  voiceLogger(client); // Add this line to initialize the voiceLogger
+  // Initialize youtube alert
+  youtubealert(client); // Add this line to initialize the youtubealert
 });
 
 // Interaction create event
