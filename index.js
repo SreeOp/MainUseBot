@@ -1,99 +1,73 @@
-// Import the required modules and functions
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-require('dotenv').config(); // Load environment variables
+const { EmbedBuilder } = require('discord.js'); // Import EmbedBuilder
+const os = require('os');
+const { Canvas } = require('@napi-rs/canvas');
+const { performance } = require('perf_hooks');
 
-// Import the setStatus function, warScheduler, welcome function, cfxStatus function, and voiceLogger
-const setStatus = require('./functions/setStatus');
-const warScheduler = require('./functions/warScheduler');
-const welcome = require('./functions/welcome');
-const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
-const botStatus = require('./functions/botStatus');
+module.exports = async (client) => {
+  const channelId = '1266779806582702171'; // Replace with your channel ID
+  const developerId = 'sreeop'; // Replace with your developer's ID
 
-// Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] }); // Include GuildVoiceStates intent
+  // Function to generate the CPU and memory usage graph
+  const generateGraph = async (usage) => {
+    const canvas = new Canvas(600, 200);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, 600, 200);
 
-// Initialize commands collection
-client.commands = new Collection();
+    // Draw CPU usage graph (as an example)
+    ctx.fillStyle = 'green';
+    ctx.fillRect(0, 0, usage * 6, 200); // Scale the CPU usage to fit in the graph
 
-// Command files
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    return canvas.toBuffer();
+  };
 
-// Set commands to the collection
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
-  client.commands.set(command.data.name, command);
-}
+  // Function to send the bot status message
+  const sendBotStatus = async () => {
+    const ping = client.ws.ping;
+    const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // Convert to MB
+    const cpuUsage = (performance.now() - process.hrtime()[0]) / 1000; // CPU usage approximation
+    const nodeVersion = process.version;
+    const discordVersion = require('discord.js').version;
+    const uptime = formatUptime(process.uptime());
 
-// Deploy commands
-const deployCommands = require('./deploy-commands');
-deployCommands().catch(console.error);
+    // Create the embed message using EmbedBuilder
+    const embed = new EmbedBuilder()
+      .setTitle('Bot Live Status')
+      .addFields(
+        { name: 'Uptime', value: uptime, inline: true },
+        { name: 'Ping', value: `${ping}ms`, inline: true },
+        { name: 'Memory Usage', value: `${memoryUsage.toFixed(2)} MB`, inline: true },
+        { name: 'CPU Usage', value: `${cpuUsage.toFixed(2)}%`, inline: true },
+        { name: 'Node Version', value: nodeVersion, inline: true },
+        { name: 'Discord.js Version', value: discordVersion, inline: true }
+      )
+      .setColor('#FF4D00')
+      .setFooter({ text: `Developed by <@${developerId}>` });
 
-// Ready event
-client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}`);
-  
-  // Set the bot's status
-  setStatus(client);
-  
-  // Initialize war scheduler
-  warScheduler(client);
+    // Generate CPU Usage graph
+    const graphBuffer = await generateGraph(cpuUsage);
 
-  // Initialize welcome message functionality
-  welcome(client);
-
-  // Call the Cfx.re status function to send status to a channel
-  cfxStatus(client); 
-
-  // Initialize bot status update every 10 minutes
-  botStatus(client);
-  
-});
-
-// Interaction create event
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-
-  if (!command) return;
-
-  // Check if ALLOWED_ROLES is defined
-  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
-  const memberRoles = interaction.member.roles.cache;
-  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
-
-  if (!hasPermission) {
-    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-  }
-
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    if (!interaction.replied) {
-      await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+    // Send the message to the specified channel
+    const channel = await client.channels.fetch(channelId);
+    if (channel) {
+      channel.send({
+        content: `Bot Status Update: <@${developerId}>`,
+        embeds: [embed],
+        files: [{ attachment: graphBuffer, name: 'cpu-usage.png' }],
+      });
     } else {
-      await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
+      console.log('Channel not found');
     }
-  }
-});
+  };
 
-// Login to Discord with your app's token from environment variables
-client.login(process.env.DISCORD_TOKEN);
+  // Format uptime in HH:MM:SS
+  const formatUptime = (uptime) => {
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    return `${hours}h ${minutes}m ${seconds}s`;
+  };
 
-// Set up an Express server
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('Bot is running!');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
-});
+  // Update the bot status every 10 minutes (600,000 ms)
+  setInterval(sendBotStatus, 600000); // 600000 ms = 10 minutes
+};
