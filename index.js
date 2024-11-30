@@ -10,7 +10,6 @@ const setStatus = require('./functions/setStatus');
 const warScheduler = require('./functions/warScheduler');
 const welcome = require('./functions/welcome');
 const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
-const ticketSystem = require('./functions/ticketSystem');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] }); // Include GuildVoiceStates intent
@@ -48,9 +47,6 @@ client.once('ready', () => {
 
   // Call the Cfx.re status function to send status to a channel
   cfxStatus(client); 
-
-  // Ticket
-  ticketSystem(client);
 
 });
 
