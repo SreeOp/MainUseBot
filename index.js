@@ -10,6 +10,7 @@ const setStatus = require('./functions/setStatus');
 const warScheduler = require('./functions/warScheduler');
 const welcome = require('./functions/welcome');
 const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
+const botStatus = require('./functions/botStatus');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] }); // Include GuildVoiceStates intent
@@ -48,6 +49,9 @@ client.once('ready', () => {
   // Call the Cfx.re status function to send status to a channel
   cfxStatus(client); 
 
+  // Initialize bot status update every 10 minutes
+  botStatus(client);
+  
 });
 
 // Interaction create event
