@@ -1,5 +1,5 @@
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 module.exports = (client) => {
   const channelId = '1266779806582702171'; // Replace with your channel ID
@@ -8,12 +8,12 @@ module.exports = (client) => {
 
   const updateServerStatus = async () => {
     try {
-      // Fetch server data
-      const playersResponse = await fetch(`http://${serverIP}:${port}/players.json`);
-      const infoResponse = await fetch(`http://${serverIP}:${port}/info.json`);
+      // Fetch server data using Axios
+      const playersResponse = await axios.get(`http://${serverIP}:${port}/players.json`);
+      const infoResponse = await axios.get(`http://${serverIP}:${port}/info.json`);
 
-      const playersData = await playersResponse.json();
-      const infoData = await infoResponse.json();
+      const playersData = playersResponse.data;
+      const infoData = infoResponse.data;
 
       // Extract relevant data
       const currentPlayers = playersData.length;
@@ -33,7 +33,7 @@ module.exports = (client) => {
           { name: '👥 Online Players', value: `${currentPlayers}/${maxPlayers}`, inline: true },
           { name: '⏰ Restart Times', value: restartTimes, inline: true }
         )
-        .setImage('YOUR_CUSTOM_IMAGE_URL') // Replace with your image URL
+        .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1242682120141275176/standard_3.gif?ex=674dd3a9&is=674c8229&hm=f7c111ab36c7fa4c944d87df2f6e5d6c70c94e91e12018cea74e2a33c44e1be6&') // Replace with your image URL
         .setFooter({ text: `${serverName} | Last Updated` })
         .setTimestamp();
 
