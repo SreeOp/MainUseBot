@@ -3,7 +3,7 @@ const axios = require('axios');
 const moment = require('moment-timezone');
 const IP = "64.227.138.59:30120";
 const Channel_id = "1266779806582702171";
-const Message_id = "1312806731889377310";
+const Message_id = "1311764804309876796";
 const Guild_id = "754291343551102976";
 const color_filter = [
     "^0",
