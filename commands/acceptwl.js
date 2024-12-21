@@ -110,7 +110,7 @@ ctx.fillText(`${mentionedUser.username.toUpperCase()}`, 550, 250);
       const attachment = new AttachmentBuilder(await frame.encode('png'), { name: 'accept.png' });
       
  
-      const channel = client.channels.cache.get('1313358894919192636');
+      const channel = client.channels.cache.get('1313134410282962996');
       
     
       
