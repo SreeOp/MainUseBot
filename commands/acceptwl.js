@@ -77,7 +77,7 @@ GlobalFonts.registerFromPath(join(__dirname, '..', '..', 'fonts', 'A25-SQUANOVA.
 ctx.fillText(`${mentionedUser.username.toUpperCase()}`, 550, 250);
       	
       // Date & Time
-      	ctx.font = "33px SemiBold";
+      	ctx.font = "29px SemiBold";
         ctx.fillStyle = `#21130d`;
        	ctx.fillText(`${currentDate}, ${currentTime}`, 30, 365);
       
