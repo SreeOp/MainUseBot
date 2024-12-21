@@ -1,34 +1,3 @@
-const {
-  SlashCommandBuilder,
-  EmbedBuilder,
-  ChatInputCommandInteraction,
-  ActionRowBuilder,
-  AttachmentBuilder,
-  ButtonBuilder,
-  Client,
-} = require("discord.js");
-const moment = require('moment-timezone');
-const canvas = require("@napi-rs/canvas");
-const { join } = require('path');
-const { GlobalFonts } = require('@napi-rs/canvas');
-let counter = 0;
-
-function generateRandomCode() {
-  const randomNumber = Math.floor(1000 + Math.random() * 9000);
-  const randomLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-  return `${randomNumber}${randomLetter}`;
-}
-
-function getRandomCode() {
-  const num = Math.floor(Math.random() * 100);
-  const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-  return `${num.toString().padStart(2, '0')} ${letter}`;
-}
-
-function RowCode() {
-  return Math.floor(1 + Math.random() * 10);
-}
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("visa-accept")
@@ -40,6 +9,8 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction, client) {
+    await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction early
+
     const mentionedUser = interaction.options.getUser('user');
     const currentDate = new Date().toLocaleDateString();
     const randomCode = generateRandomCode();
@@ -113,13 +84,13 @@ module.exports = {
     if (member) {
       try {
         await member.roles.add(roleId);
-        await interaction.reply({ content: `Successfully assigned the role to <@${mentionedUser.id}>.`, ephemeral: true });
+        await interaction.followUp({ content: `Successfully assigned the role to <@${mentionedUser.id}>.`, ephemeral: true });
       } catch (error) {
         console.error(`Failed to add role: ${error}`);
-        await interaction.reply({ content: `Failed to assign the role to <@${mentionedUser.id}>.`, ephemeral: true });
+        await interaction.followUp({ content: `Failed to assign the role to <@${mentionedUser.id}>.`, ephemeral: true });
       }
     } else {
-      await interaction.reply({ content: `Could not find the user in this server.`, ephemeral: true });
+      await interaction.followUp({ content: `Could not find the user in this server.`, ephemeral: true });
     }
   },
 };
