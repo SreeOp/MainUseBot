@@ -48,7 +48,6 @@ client.once('ready', () => {
   // Call the Cfx.re status function to send status to a channel
   cfxStatus(client); 
 
-  fivemStatus(client);
 
 });
 
