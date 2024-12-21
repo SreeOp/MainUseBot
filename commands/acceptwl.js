@@ -13,9 +13,6 @@ const { join } = require('path');
 const { GlobalFonts } = require('@napi-rs/canvas');
 let counter = 0;
 
-// Define the role ID
-const ROLE_ID = '1046786167644880946'; // Replace with the role ID to be assigned
-
 function generateRandomCode() {
   const randomNumber = Math.floor(1000 + Math.random() * 9000);
   const randomLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
@@ -44,13 +41,6 @@ module.exports = {
     ),
   async execute(interaction, client) {
     const mentionedUser = interaction.options.getUser('user');
-    const guild = interaction.guild; // Get the guild
-    const member = guild.members.cache.get(mentionedUser.id); // Get the member object
-
-    if (!member) {
-      return interaction.reply({ content: "The mentioned user is not in the server.", ephemeral: true });
-    }
-
     const currentDate = new Date().toLocaleDateString();
     const randomCode = generateRandomCode();
     const rowCode = RowCode();
@@ -63,9 +53,10 @@ module.exports = {
 
     const currentTime = getCurrentISTTime();
     counter++;
+    const randomNumber = Math.floor(Math.random() * 8000) + 1000;
+
     GlobalFonts.registerFromPath(join(__dirname, '..', '..', 'fonts', 'AQuietSleep.ttf'), 'SemiBold');
     GlobalFonts.registerFromPath(join(__dirname, '..', '..', 'fonts', 'A25-SQUANOVA.ttf'), 'SkCustom');
-
     const frame = canvas.createCanvas(1440, 582);
     const ctx = frame.getContext('2d');
     const background = await canvas.loadImage('https://r2.fivemanage.com/e5kQRKN2PzcSphJCViYrL/nrp_approved.png');
@@ -111,14 +102,24 @@ module.exports = {
 
     const channel = client.channels.cache.get('1313134410282962996');
 
-    try {
-      // Assign the role to the mentioned user
-      await member.roles.add(ROLE_ID);
-      await channel.send({ files: [attachment], content: `<@${mentionedUser.id}>` });
-      await interaction.reply({ content: `Whitelist accepted for ${mentionedUser}. Role assigned successfully.`, ephemeral: true });
-    } catch (error) {
-      console.error(error);
-      await interaction.reply({ content: 'An error occurred while assigning the role or sending the message.', ephemeral: true });
+    // Send the generated image and message to the specified channel
+    await channel.send({ files: [attachment], content: `<@${mentionedUser.id}>` });
+
+    // Add the role to the mentioned user
+    const roleId = '1046786167644880946'; // Replace with your desired role ID
+    const guild = interaction.guild; // Get the guild where the interaction was triggered
+    const member = guild.members.cache.get(mentionedUser.id);
+
+    if (member) {
+      try {
+        await member.roles.add(roleId);
+        await interaction.reply({ content: `Successfully assigned the role to <@${mentionedUser.id}>.`, ephemeral: true });
+      } catch (error) {
+        console.error(`Failed to add role: ${error}`);
+        await interaction.reply({ content: `Failed to assign the role to <@${mentionedUser.id}>.`, ephemeral: true });
+      }
+    } else {
+      await interaction.reply({ content: `Could not find the user in this server.`, ephemeral: true });
     }
   },
 };
