@@ -14,7 +14,7 @@ const { GlobalFonts } = require('@napi-rs/canvas');
 let counter = 0;
 
 // Define the role ID
-const ROLE_ID = '1253347204601741342'; // Replace with the role ID to be assigned
+const ROLE_ID = '1046786167644880946'; // Replace with the role ID to be assigned
 
 function generateRandomCode() {
   const randomNumber = Math.floor(1000 + Math.random() * 9000);
