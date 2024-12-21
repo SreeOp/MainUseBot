@@ -35,10 +35,10 @@ deployCommands().catch(console.error);
 // Ready event
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
-  
+
   // Set the bot's status
   setStatus(client);
-  
+
   // Initialize war scheduler
   warScheduler(client);
 
@@ -47,8 +47,6 @@ client.once('ready', () => {
 
   // Call the Cfx.re status function to send status to a channel
   cfxStatus(client); 
-
-
 });
 
 // Interaction create event
@@ -69,7 +67,7 @@ client.on('interactionCreate', async interaction => {
   }
 
   try {
-    await command.execute(interaction);
+    await command.execute(interaction, client); // Pass the client to the command
   } catch (error) {
     console.error(error);
     if (!interaction.replied) {
