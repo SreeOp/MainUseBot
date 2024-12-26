@@ -21,7 +21,7 @@ module.exports = (client) => {
     );
 
     // Draw the circular avatar
-    const radius = 200; // Adjusted radius for a better fit
+    const radius = 150; // Adjusted radius for a better fit
     const avatarX = 220; // X-coordinate for avatar placement
     const avatarY = 200; // Y-coordinate for avatar placement
 
