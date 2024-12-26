@@ -7,9 +7,9 @@ module.exports = (client) => {
 
   client.on('guildMemberAdd', async (member) => {
        
-    const frame = canvas.createCanvas(2000, 932);
+    const frame = canvas.createCanvas(1080, 387);
     const ctx = frame.getContext('2d');
-const bg = await canvas.loadImage('https://i.ibb.co/dPVV0K7/Welcome-20241027-170617-0000-upscaled.png');
+const bg = await canvas.loadImage('https://i.ibb.co/YpFDX5c/welcome-image-1.png');
 ctx.drawImage(bg, 0, 0, frame.width, frame.height);
 
       const username = member.user.username;
@@ -31,7 +31,7 @@ const radius = 100;
     const attachment = new Discord.AttachmentBuilder(await frame.encode('png'), 'welcome-image.png');
 
     const welcomeChannel = client.channels.cache.get(welcomeChannelId);
-    welcomeChannel.send({ content: `Welcome to FarX, ${member}!`, files: [attachment]});
+    welcomeChannel.send({ content: `Welcome to NightCity Roleplay, ${member}!`, files: [attachment]});
   });
 
 };
