@@ -1,167 +1,155 @@
-const { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
+const {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} = require('discord.js');
+
+const SUPPORT_ROLES = {
+  general_support: '1007930481716760666', // Replace with actual role ID for General Support
+  frp: '1026192003718975488', // Replace with actual role ID for FRP
+  items_loss: '1046786167644880946', // Replace with actual role ID for Items Loss
+  premium: '1019647599042641970', // Replace with actual role ID for Premium
+};
 
 module.exports = async (client) => {
   client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand() || interaction.commandName !== 'ticket') return;
+    if (!interaction.isStringSelectMenu() || interaction.customId !== 'ticket-category') return;
 
-    // Create the dropdown menu for ticket categories
-    const dropdown = new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId('ticket-category')
-        .setPlaceholder('Choose a ticket category')
-        .addOptions(
-          { label: 'General Support', value: 'general_support' },
-          { label: 'FRP', value: 'frp' },
-          { label: 'Items Loss', value: 'items_loss' },
-          { label: 'Premium', value: 'premium' }
-        )
-    );
+    const selectedCategory = interaction.values[0];
+    const roleId = SUPPORT_ROLES[selectedCategory];
 
-    // Embed message for the ticket system
-    const embed = new EmbedBuilder()
-      .setColor('#FF4500')
-      .setTitle('🎫 Ticket System')
-      .setDescription('Please select a category for your ticket from the dropdown menu.');
+    if (!roleId) {
+      return interaction.reply({
+        content: 'Invalid category selected.',
+        ephemeral: true,
+      });
+    }
 
-    await interaction.reply({ embeds: [embed], components: [dropdown], ephemeral: true });
+    // Create a new channel for the ticket
+    const ticketChannelName = `ticket-${interaction.user.username}-${selectedCategory}`;
+    const guild = interaction.guild;
 
-    // Collector for dropdown interaction
-    const filter = (i) => i.customId === 'ticket-category' && i.user.id === interaction.user.id;
-    const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
-
-    collector.on('collect', async (i) => {
-      const category = i.values[0];
-      const roles = {
-        general_support: '1007930481716760666', // Replace with actual role ID
-        frp: '1026192003718975488', // Replace with actual role ID
-        items_loss: '1046786167644880946', // Replace with actual role ID
-        premium: '1019647599042641970', // Replace with actual role ID
-      };
-
-      const roleId = roles[category];
-      const categoryNames = {
-        general_support: 'General Support',
-        frp: 'FRP',
-        items_loss: 'Items Loss',
-        premium: 'Premium',
-      };
-
-      const categoryName = categoryNames[category];
-
-      // Create a private channel or use an existing ticket channel logic here
-      const ticketChannel = await interaction.guild.channels.create({
-        name: `ticket-${i.user.username}`,
-        type: 0, // 0 is GuildText
-        topic: `Ticket opened by ${i.user.tag} (${categoryName})`,
+    try {
+      const ticketChannel = await guild.channels.create({
+        name: ticketChannelName,
+        type: 0, // Guild text channel
         permissionOverwrites: [
           {
-            id: interaction.guild.id, // Deny access to everyone
+            id: guild.id, // @everyone
             deny: ['ViewChannel'],
           },
           {
-            id: i.user.id, // Allow access to the ticket opener
-            allow: ['ViewChannel', 'SendMessages'],
+            id: interaction.user.id, // Ticket opener
+            allow: ['ViewChannel', 'SendMessages', 'AttachFiles'],
           },
           {
-            id: roleId, // Allow access to the appropriate role
+            id: roleId, // Appropriate support role
             allow: ['ViewChannel', 'SendMessages'],
           },
         ],
       });
 
-      // Embed for the ticket channel
-      const ticketEmbed = new EmbedBuilder()
-        .setColor('#00FF00')
-        .setTitle('🎫 Ticket Opened')
+      // Send the ticket creation confirmation message
+      const embed = new EmbedBuilder()
+        .setColor('#FF4500')
+        .setTitle('Ticket Created')
         .setDescription(
-          `Category: **${categoryName}**\n\nUser: <@${i.user.id}>\nSupport Role: <@&${roleId}>`
+          `Hello <@${interaction.user.id}>, your ticket has been created. A member of the <@&${roleId}> team will assist you shortly.`
         )
-        .setFooter({ text: 'Click "Close" below to close this ticket.' });
+        .setFooter({ text: 'NRP Admin' });
 
-      // Close button
       const closeButton = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('close-ticket')
-          .setLabel('Close')
+          .setLabel('Close Ticket')
           .setStyle(ButtonStyle.Danger)
       );
 
-      await ticketChannel.send({
-        content: `<@&${roleId}> <@${i.user.id}>`,
-        embeds: [ticketEmbed],
-        components: [closeButton],
+      await ticketChannel.send({ embeds: [embed], components: [closeButton] });
+
+      await interaction.reply({
+        content: `Your ticket has been created: ${ticketChannel}`,
+        ephemeral: true,
       });
+    } catch (error) {
+      console.error('Error creating ticket channel:', error);
+      await interaction.reply({
+        content: 'There was an error creating your ticket. Please try again later.',
+        ephemeral: true,
+      });
+    }
+  });
 
-      await i.reply({ content: `Your ticket has been created: ${ticketChannel}`, ephemeral: true });
+  // Handle the close ticket button
+  client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton() || interaction.customId !== 'close-ticket') return;
+
+    const ticketChannel = interaction.channel;
+
+    // Ask for confirmation to close
+    const confirmationEmbed = new EmbedBuilder()
+      .setColor('#FF4500')
+      .setTitle('Confirm Ticket Closure')
+      .setDescription('Are you sure you want to close this ticket?');
+
+    const confirmationButtons = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('confirm-close')
+        .setLabel('Yes')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId('cancel-close')
+        .setLabel('No')
+        .setStyle(ButtonStyle.Danger)
+    );
+
+    await interaction.reply({
+      embeds: [confirmationEmbed],
+      components: [confirmationButtons],
+      ephemeral: true,
     });
+  });
 
-    // Collector for close button
-    client.on('interactionCreate', async (interaction) => {
-      if (!interaction.isButton() || interaction.customId !== 'close-ticket') return;
+  // Handle confirmation buttons
+  client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
 
-      if (!interaction.member.roles.cache.some((role) => ['ADMIN_ROLE_ID'].includes(role.id))) {
-        return interaction.reply({ content: 'You do not have permission to close tickets.', ephemeral: true });
+    if (interaction.customId === 'confirm-close') {
+      const ticketChannel = interaction.channel;
+
+      // Save the transcript to a channel
+      const transcriptChannelId = '1313134410282962996'; // Replace with the ID of the transcript channel
+      const transcriptChannel = interaction.guild.channels.cache.get(transcriptChannelId);
+
+      if (transcriptChannel) {
+        const messages = await ticketChannel.messages.fetch({ limit: 100 });
+        const transcript = messages
+          .reverse()
+          .map(
+            (msg) =>
+              `${msg.author.tag} (${msg.createdAt.toLocaleString()}): ${msg.content}`
+          )
+          .join('\n');
+
+        const transcriptEmbed = new EmbedBuilder()
+          .setColor('#FF4500')
+          .setTitle(`Transcript for ${ticketChannel.name}`)
+          .setDescription('Saved messages from this ticket.')
+          .setFooter({ text: 'NRP Admin' });
+
+        await transcriptChannel.send({
+          embeds: [transcriptEmbed],
+          files: [{ attachment: Buffer.from(transcript, 'utf-8'), name: `${ticketChannel.name}-transcript.txt` }],
+        });
       }
 
-      // Confirmation message
-      const confirmationEmbed = new EmbedBuilder()
-        .setColor('#FFA500')
-        .setTitle('Confirm Ticket Closure')
-        .setDescription('Are you sure you want to close this ticket?');
-
-      const confirmButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('confirm-close')
-          .setLabel('Yes')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId('cancel-close')
-          .setLabel('No')
-          .setStyle(ButtonStyle.Secondary)
-      );
-
-      await interaction.reply({ embeds: [confirmationEmbed], components: [confirmButtons], ephemeral: true });
-
-      // Collect response
-      const confirmFilter = (button) =>
-        ['confirm-close', 'cancel-close'].includes(button.customId) && button.user.id === interaction.user.id;
-      const confirmCollector = interaction.channel.createMessageComponentCollector({
-        filter: confirmFilter,
-        time: 30000,
+      await ticketChannel.delete();
+    } else if (interaction.customId === 'cancel-close') {
+      await interaction.reply({
+        content: 'Ticket closure canceled.',
+        ephemeral: true,
       });
-
-      confirmCollector.on('collect', async (button) => {
-        if (button.customId === 'confirm-close') {
-          // Save transcript
-          const messages = await interaction.channel.messages.fetch({ limit: 100 });
-          const transcript = messages
-            .map((msg) => `${msg.author.tag}: ${msg.content}`)
-            .reverse()
-            .join('\n');
-
-          const htmlContent = `
-            <html>
-              <body>
-                <pre>${transcript}</pre>
-              </body>
-            </html>
-          `;
-
-          const transcriptPath = path.join(__dirname, 'transcripts', `ticket-${interaction.channel.id}.html`);
-          fs.writeFileSync(transcriptPath, htmlContent);
-
-          const transcriptChannel = interaction.guild.channels.cache.get('1313134410282962996'); // Replace with actual channel ID
-          await transcriptChannel.send({
-            files: [transcriptPath],
-          });
-
-          await interaction.channel.delete();
-        } else {
-          await button.reply({ content: 'Ticket closure canceled.', ephemeral: true });
-        }
-      });
-    });
+    }
   });
 };
