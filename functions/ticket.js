@@ -1,13 +1,11 @@
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
-module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('ticket')
-    .setDescription('Create a ticket system with a dropdown menu.'),
+module.exports = async (client) => {
+  client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand() || interaction.commandName !== 'ticket') return;
 
-  async execute(interaction) {
     // Create the dropdown menu for ticket categories
     const dropdown = new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
@@ -30,10 +28,10 @@ module.exports = {
     await interaction.reply({ embeds: [embed], components: [dropdown], ephemeral: true });
 
     // Collector for dropdown interaction
-    const filter = i => i.customId === 'ticket-category' && i.user.id === interaction.user.id;
+    const filter = (i) => i.customId === 'ticket-category' && i.user.id === interaction.user.id;
     const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
 
-    collector.on('collect', async i => {
+    collector.on('collect', async (i) => {
       const category = i.values[0];
       const roles = {
         general_support: '1007930481716760666', // Replace with actual role ID
@@ -100,12 +98,11 @@ module.exports = {
     });
 
     // Collector for close button
-    const closeFilter = i => i.customId === 'close-ticket';
-    const closeCollector = interaction.channel.createMessageComponentCollector({ closeFilter, time: 60000 });
+    client.on('interactionCreate', async (interaction) => {
+      if (!interaction.isButton() || interaction.customId !== 'close-ticket') return;
 
-    closeCollector.on('collect', async i => {
-      if (!i.member.roles.cache.some(role => ['ADMIN_ROLE_ID'].includes(role.id))) {
-        return i.reply({ content: 'You do not have permission to close tickets.', ephemeral: true });
+      if (!interaction.member.roles.cache.some((role) => ['ADMIN_ROLE_ID'].includes(role.id))) {
+        return interaction.reply({ content: 'You do not have permission to close tickets.', ephemeral: true });
       }
 
       // Confirmation message
@@ -125,18 +122,22 @@ module.exports = {
           .setStyle(ButtonStyle.Secondary)
       );
 
-      await i.reply({ embeds: [confirmationEmbed], components: [confirmButtons], ephemeral: true });
+      await interaction.reply({ embeds: [confirmationEmbed], components: [confirmButtons], ephemeral: true });
 
       // Collect response
-      const confirmFilter = button => ['confirm-close', 'cancel-close'].includes(button.customId) && button.user.id === i.user.id;
-      const confirmCollector = i.channel.createMessageComponentCollector({ confirmFilter, time: 30000 });
+      const confirmFilter = (button) =>
+        ['confirm-close', 'cancel-close'].includes(button.customId) && button.user.id === interaction.user.id;
+      const confirmCollector = interaction.channel.createMessageComponentCollector({
+        filter: confirmFilter,
+        time: 30000,
+      });
 
-      confirmCollector.on('collect', async button => {
+      confirmCollector.on('collect', async (button) => {
         if (button.customId === 'confirm-close') {
           // Save transcript
-          const messages = await i.channel.messages.fetch({ limit: 100 });
+          const messages = await interaction.channel.messages.fetch({ limit: 100 });
           const transcript = messages
-            .map(msg => `${msg.author.tag}: ${msg.content}`)
+            .map((msg) => `${msg.author.tag}: ${msg.content}`)
             .reverse()
             .join('\n');
 
@@ -148,19 +149,19 @@ module.exports = {
             </html>
           `;
 
-          const transcriptPath = path.join(__dirname, 'transcripts', `ticket-${i.channel.id}.html`);
+          const transcriptPath = path.join(__dirname, 'transcripts', `ticket-${interaction.channel.id}.html`);
           fs.writeFileSync(transcriptPath, htmlContent);
 
-          const transcriptChannel = i.guild.channels.cache.get('1313134410282962996'); // Replace with actual channel ID
+          const transcriptChannel = interaction.guild.channels.cache.get('1313134410282962996'); // Replace with actual channel ID
           await transcriptChannel.send({
             files: [transcriptPath],
           });
 
-          await i.channel.delete();
+          await interaction.channel.delete();
         } else {
           await button.reply({ content: 'Ticket closure canceled.', ephemeral: true });
         }
       });
     });
-  },
+  });
 };
