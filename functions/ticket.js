@@ -52,7 +52,7 @@ module.exports = async (client) => {
 
       // Send the ticket creation confirmation message
       const embed = new EmbedBuilder()
-        .setColor('#FF4500')
+        .setColor('#53098C')
         .setTitle('Ticket Created')
         .setDescription(
           `Hello <@${interaction.user.id}>, your ticket has been created. A member of the <@&${roleId}> team will assist you shortly.`
