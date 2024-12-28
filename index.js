@@ -46,7 +46,7 @@ client.once('ready', () => {
   // Initialize welcome message functionality
   welcome(client);
 
-  // Initialize ticket message functionality
+  // Initialize welcome message functionality
   ticket(client);
 
   // Call the Cfx.re status function to send status to a channel
