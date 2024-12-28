@@ -43,7 +43,7 @@ module.exports = {
 
     // Embed message for the ticket system
     const embed = new EmbedBuilder()
-      .setColor('#FF4500')
+      .setColor('#53098C')
       .setTitle('🎫 Ticket System')
       .setDescription(
         'Welcome to the ticket system! Please select a category from the dropdown menu below to open a ticket.'
