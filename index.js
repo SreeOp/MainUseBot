@@ -11,6 +11,7 @@ const warScheduler = require('./functions/warScheduler');
 const welcome = require('./functions/welcome');
 const ticket = require('./functions/ticket');
 const cfxStatus = require('./functions/cfxStatus'); // Import the Cfx.re status function
+const whitelist = require('./functions/whitelist');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] }); // Include GuildVoiceStates intent
@@ -46,8 +47,11 @@ client.once('ready', () => {
   // Initialize welcome message functionality
   welcome(client);
 
-  // Initialize welcome message functionality
+  // Initialize ticket message functionality
   ticket(client);
+
+  // Initialize whitelist message functionality
+  whitelist(client);
 
   // Call the Cfx.re status function to send status to a channel
   cfxStatus(client); 
