@@ -30,7 +30,6 @@ module.exports = {
       .setTitle('Whitelist Application')
       .setDescription('Click the **Apply** button to start your whitelist application.')
       .setColor('#FF4500');
-      .setEmoji("🟢")
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
