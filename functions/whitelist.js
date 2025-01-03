@@ -1,208 +1,176 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+} = require('discord.js');
 
 module.exports = (client) => {
-  const APPLICATION_CHANNEL = '1255162116126539786'; // Channel where applications are sent
-  const ACCEPT_CHANNEL = '1313134410282962996'; // "Accept" log channel
-  const PENDING_CHANNEL = '1303269751166079036'; // "Pending" log channel
-  const REJECT_CHANNEL = '1316963699029704724'; // "Reject" log channel
+  const APPLICATION_CHANNEL = '1255162116126539786'; // Replace with the ID of the channel where applications are sent
+  const ACCEPT_CHANNEL = '1313134410282962996'; // Replace with the ID of the "accept" log channel
+  const PENDING_CHANNEL = '1303269751166079036'; // Replace with the ID of the "pending" log channel
+  const REJECT_CHANNEL = '1316963699029704724'; // Replace with the ID of the "reject" log channel
 
-  const ACCEPT_ROLE = '1253347204601741342'; // Role for accepted users
-  const PENDING_ROLE = '1253347271718735882'; // Role for pending users
+  const ACCEPT_ROLE = '1253347204601741342'; // Replace with the role ID for accepted users
+  const PENDING_ROLE = '1253347271718735882'; // Replace with the role ID for pending users
 
-  // Function to handle button interactions
-  client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isButton()) return;
 
-    const { customId, message } = interaction;
-    if (!customId.startsWith('application-')) return;
-
-    const action = customId.split('-')[1]; // accept, reject, pending
-    const applicantId = message.embeds[0]?.description?.match(/<@(\d+)>/)?.[1]; // Extract applicant ID
-    const whitelistManagerId = interaction.user.id;
-
-    const embed = new EmbedBuilder()
-      .setColor('#FF4500')
-      .setFooter({ text: 'Whitelist Application Manager' });
-
-    // Assign channels and roles
-    const logChannelId =
-      action === 'accept'
-        ? ACCEPT_CHANNEL
-        : action === 'reject'
-        ? REJECT_CHANNEL
-        : PENDING_CHANNEL;
-
-    const logChannel = interaction.guild.channels.cache.get(logChannelId);
-
-    const roles = {
-      accept: ACCEPT_ROLE,
-      pending: PENDING_ROLE,
-    };
-
-    try {
-      // Action logic
-      switch (action) {
-        case 'accept':
-          embed
-            .setTitle('Whitelist Application Accepted')
-            .setDescription(
-              `**User:** <@${applicantId}>\n**Actioned by:** <@${whitelistManagerId}>`
-            );
-
-          await interaction.guild.members.cache
-            .get(applicantId)
-            ?.roles.add(roles.accept);
-          await interaction.guild.members.cache
-            .get(applicantId)
-            ?.roles.remove(roles.pending);
-          break;
-
-        case 'reject':
-          embed
-            .setTitle('Whitelist Application Rejected')
-            .setDescription(
-              `**User:** <@${applicantId}>\n**Actioned by:** <@${whitelistManagerId}>`
-            );
-          break;
-
-        case 'pending':
-          embed
-            .setTitle('Whitelist Application Pending')
-            .setDescription(
-              `**User:** <@${applicantId}>\n**Actioned by:** <@${whitelistManagerId}>`
-            );
-
-          await interaction.guild.members.cache
-            .get(applicantId)
-            ?.roles.add(roles.pending);
-          break;
-
-        default:
-          return;
-      }
-
-      // Send the embed to the appropriate log channel
-      await logChannel.send({ embeds: [embed] });
-
-      // Disable buttons after interaction
-      const disabledRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('application-accept')
-          .setLabel('Accept')
-          .setStyle(ButtonStyle.Success)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId('application-pending')
-          .setLabel('Pending')
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId('application-reject')
-          .setLabel('Reject')
-          .setStyle(ButtonStyle.Danger)
-          .setDisabled(true)
-      );
-
-      // Update the original message
-      await interaction.update({ components: [disabledRow] });
-    } catch (error) {
-      console.error('Error handling whitelist action:', error);
-    }
-  });
-
-  // Function to send the application embed
-  client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand() || interaction.commandName !== 'setwhitelist') return;
-
+  // Function to initialize the whitelist embed message
+  const initializeWhitelistMessage = async (channel) => {
     const embed = new EmbedBuilder()
       .setTitle('Whitelist Application')
-      .setDescription('Click the button below to apply for a whitelist.')
-      .setColor('#00FF00');
+      .setDescription('Click the **Apply** button to start your whitelist application.')
+      .setColor('#FF4500');
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId('apply')
+        .setCustomId('apply-whitelist')
         .setLabel('Apply')
         .setStyle(ButtonStyle.Primary)
     );
 
-    await interaction.reply({
-      embeds: [embed],
-      components: [row],
-    });
-  });
+    await channel.send({ embeds: [embed], components: [row] });
+  };
 
-  // Function to handle "Apply" button
+  // Handle interaction creation
   client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isButton() || interaction.customId !== 'apply') return;
+    if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
+      // Create a modal for the application
+      const modal = new ModalBuilder()
+        .setCustomId('whitelist-application')
+        .setTitle('Whitelist Application');
 
-    const modal = new ModalBuilder()
-      .setCustomId('whitelist-application')
-      .setTitle('Whitelist Application')
-      .addComponents(
-        new TextInputBuilder()
-          .setCustomId('realName')
-          .setLabel('What is your real name?')
-          .setStyle(TextInputStyle.Short),
-        new TextInputBuilder()
-          .setCustomId('realAge')
-          .setLabel('What is your real age?')
-          .setStyle(TextInputStyle.Short),
-        new TextInputBuilder()
-          .setCustomId('characterName')
-          .setLabel('What is your character name?')
-          .setStyle(TextInputStyle.Short),
-        new TextInputBuilder()
-          .setCustomId('rpExperience')
-          .setLabel('What is your roleplay experience?')
-          .setStyle(TextInputStyle.Paragraph),
-        new TextInputBuilder()
-          .setCustomId('readRules')
-          .setLabel('Did you read the rules? (Yes/No)')
-          .setStyle(TextInputStyle.Short)
+      const questions = [
+        { id: 'real-name', label: 'Real Name' },
+        { id: 'real-age', label: 'Real Age' },
+        { id: 'character-name', label: 'Character Name' },
+        { id: 'roleplay-experience', label: 'Roleplay Experience' },
+        { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+      ];
+
+      questions.forEach((q) => {
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId(q.id)
+              .setLabel(q.label)
+              .setStyle(TextInputStyle.Short)
+          )
+        );
+      });
+
+      await interaction.showModal(modal);
+    }
+
+    // Handle modal submission
+    if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
+      const answers = [
+        interaction.fields.getTextInputValue('real-name'),
+        interaction.fields.getTextInputValue('real-age'),
+        interaction.fields.getTextInputValue('character-name'),
+        interaction.fields.getTextInputValue('roleplay-experience'),
+        interaction.fields.getTextInputValue('read-rules'),
+      ];
+
+      const embed = new EmbedBuilder()
+        .setTitle('Whitelist Application Submitted')
+        .addFields(
+          { name: 'Real Name', value: answers[0] },
+          { name: 'Real Age', value: answers[1] },
+          { name: 'Character Name', value: answers[2] },
+          { name: 'Roleplay Experience', value: answers[3] },
+          { name: 'Read Rules', value: answers[4] }
+        )
+        .setFooter({ text: `User ID: ${interaction.user.id}` })
+        .setColor('#FFD700');
+
+      const actionRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('accept-whitelist')
+          .setLabel('Accept')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId('pending-whitelist')
+          .setLabel('Pending')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('reject-whitelist')
+          .setLabel('Reject')
+          .setStyle(ButtonStyle.Danger)
       );
 
-    await interaction.showModal(modal);
+      const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
+      await channel.send({
+        embeds: [embed],
+        components: [actionRow],
+      });
+
+      await interaction.reply({
+        content: 'Your application has been submitted.',
+        ephemeral: true,
+      });
+    }
+
+    // Handle accept, pending, and reject actions
+    if (
+      interaction.isButton() &&
+      ['accept-whitelist', 'pending-whitelist', 'reject-whitelist'].includes(interaction.customId)
+    ) {
+      const targetMessage = await interaction.message.fetch();
+
+      const logChannel =
+        interaction.customId === 'accept-whitelist'
+          ? interaction.guild.channels.cache.get(ACCEPT_CHANNEL)
+          : interaction.customId === 'pending-whitelist'
+          ? interaction.guild.channels.cache.get(PENDING_CHANNEL)
+          : interaction.guild.channels.cache.get(REJECT_CHANNEL);
+
+      const targetRole =
+        interaction.customId === 'accept-whitelist'
+          ? ACCEPT_ROLE
+          : interaction.customId === 'pending-whitelist'
+          ? PENDING_ROLE
+          : null;
+
+      const user = targetMessage.embeds[0].footer.text.match(/\d+/)[0];
+      const member = await interaction.guild.members.fetch(user);
+
+      const embed = new EmbedBuilder()
+        .setTitle('Whitelist Decision')
+        .setDescription(
+          `User: <@${user}>\nWhitelist Manager: <@${interaction.user.id}>`
+        )
+        .setColor(
+          interaction.customId === 'accept-whitelist'
+            ? '#32CD32'
+            : interaction.customId === 'pending-whitelist'
+            ? '#FFD700'
+            : '#FF4500'
+        );
+
+      await logChannel.send({ embeds: [embed] });
+
+      if (targetRole) {
+        await member.roles.add(targetRole);
+      }
+
+      if (interaction.customId === 'accept-whitelist') {
+        await member.roles.remove(PENDING_ROLE);
+      }
+
+      await interaction.reply({
+        content: `The whitelist application for <@${user}> has been marked as **${interaction.customId.replace(
+          '-whitelist',
+          ''
+        )}**.`,
+        ephemeral: true,
+      });
+    }
   });
 
-  // Handle modal submission
-  client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isModalSubmit() || interaction.customId !== 'whitelist-application') return;
-
-    const realName = interaction.fields.getTextInputValue('realName');
-    const realAge = interaction.fields.getTextInputValue('realAge');
-    const characterName = interaction.fields.getTextInputValue('characterName');
-    const rpExperience = interaction.fields.getTextInputValue('rpExperience');
-    const readRules = interaction.fields.getTextInputValue('readRules');
-
-    const applicationEmbed = new EmbedBuilder()
-      .setTitle('New Whitelist Application')
-      .setDescription(
-        `**Real Name:** ${realName}\n**Real Age:** ${realAge}\n**Character Name:** ${characterName}\n**Roleplay Experience:** ${rpExperience}\n**Did you read the rules?** ${readRules}\n\n**Submitted by:** <@${interaction.user.id}>`
-      )
-      .setColor('#FFFF00');
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('application-accept')
-        .setLabel('Accept')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId('application-pending')
-        .setLabel('Pending')
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('application-reject')
-        .setLabel('Reject')
-        .setStyle(ButtonStyle.Danger)
-    );
-
-    const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
-    await channel.send({
-      embeds: [applicationEmbed],
-      components: [row],
-    });
-
-    await interaction.reply({ content: 'Your application has been submitted!', ephemeral: true });
-  });
+  return initializeWhitelistMessage;
 };
