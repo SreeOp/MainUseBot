@@ -30,7 +30,6 @@ module.exports = {
       .setTitle('Whitelist Application')
       .setDescription('Click the **Apply** button to start your whitelist application.')
       .setColor('#FF4500');
-      .setImage('https://i.ibb.co/c81C5c4/Google-Pay-QR-1.png')
       .setEmoji("🟢"),
 
     const row = new ActionRowBuilder().addComponents(
