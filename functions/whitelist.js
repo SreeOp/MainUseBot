@@ -3,19 +3,15 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  StringSelectMenuBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
 } = require('discord.js');
-
 module.exports = (client) => {
   const APPLICATION_CHANNEL = '1255162116126539786'; // Replace with the ID of the channel where applications are sent
-  const ACCEPT_CHANNEL = '1313134410282962996'; // Replace with the ID of the "accept" log channel
   const PENDING_CHANNEL = '1313134410282962996'; // Replace with the ID of the "pending" log channel
   const REJECT_CHANNEL = '1313134410282962996'; // Replace with the ID of the "reject" log channel
 
-  const ACCEPT_ROLE = '1253347204601741342'; // Replace with the role ID for accepted users
   const PENDING_ROLE = '1253347271718735882'; // Replace with the role ID for pending users
 
   const initializeWhitelistMessage = async (channel) => {
@@ -85,10 +81,6 @@ module.exports = (client) => {
 
       const actionRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId('accept-whitelist')
-          .setLabel('Accept')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
           .setCustomId('pending-whitelist')
           .setLabel('Pending')
           .setStyle(ButtonStyle.Secondary),
@@ -112,21 +104,17 @@ module.exports = (client) => {
 
     if (
       interaction.isButton() &&
-      ['accept-whitelist', 'pending-whitelist', 'reject-whitelist'].includes(interaction.customId)
+      ['pending-whitelist', 'reject-whitelist'].includes(interaction.customId)
     ) {
       const targetMessage = await interaction.message.fetch();
 
       const logChannel =
-        interaction.customId === 'accept-whitelist'
-          ? interaction.guild.channels.cache.get(ACCEPT_CHANNEL)
-          : interaction.customId === 'pending-whitelist'
+        interaction.customId === 'pending-whitelist'
           ? interaction.guild.channels.cache.get(PENDING_CHANNEL)
           : interaction.guild.channels.cache.get(REJECT_CHANNEL);
 
       const targetRole =
-        interaction.customId === 'accept-whitelist'
-          ? ACCEPT_ROLE
-          : interaction.customId === 'pending-whitelist'
+        interaction.customId === 'pending-whitelist'
           ? PENDING_ROLE
           : null;
 
@@ -139,9 +127,7 @@ module.exports = (client) => {
           `User: <@${user}>\nWhitelist Manager: <@${interaction.user.id}>`
         )
         .setColor(
-          interaction.customId === 'accept-whitelist'
-            ? '#32CD32'
-            : interaction.customId === 'pending-whitelist'
+          interaction.customId === 'pending-whitelist'
             ? '#FFD700'
             : '#FF4500'
         );
@@ -152,11 +138,6 @@ module.exports = (client) => {
         await member.roles.add(targetRole);
       }
 
-      if (interaction.customId === 'accept-whitelist') {
-        await member.roles.remove(PENDING_ROLE);
-      }
-
-      // Remove buttons and update footer
       const updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
         .setFooter({ text: 'Done' });
 
