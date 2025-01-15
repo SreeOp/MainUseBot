@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('statuswl')
@@ -58,6 +57,8 @@ module.exports = {
       embeds: [updatedEmbed],
       components: [updatedRow],
     });
+
+console.log(ButtonBuilder);
 
     return interaction.reply({
       content: `Whitelist application is now **${choice.toUpperCase()}**.`,
