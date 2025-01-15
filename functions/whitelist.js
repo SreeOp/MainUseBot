@@ -7,12 +7,14 @@ const {
   TextInputBuilder,
   TextInputStyle,
 } = require('discord.js');
+
 module.exports = (client) => {
   const APPLICATION_CHANNEL = '1255162116126539786'; // Replace with the ID of the channel where applications are sent
   const PENDING_CHANNEL = '1313134410282962996'; // Replace with the ID of the "pending" log channel
   const REJECT_CHANNEL = '1313134410282962996'; // Replace with the ID of the "reject" log channel
 
   const PENDING_ROLE = '1253347271718735882'; // Replace with the role ID for pending users
+  const WHITELIST_MANAGER_ROLE = '1046786167644880946'; // Replace with the whitelist manager role ID
 
   const initializeWhitelistMessage = async (channel) => {
     const embed = new EmbedBuilder()
@@ -69,6 +71,9 @@ module.exports = (client) => {
 
       const embed = new EmbedBuilder()
         .setTitle('Whitelist Application Submitted')
+        .setDescription(
+          `<@${interaction.user.id}> has submitted an application.\nWhitelist Manager Role: <@&${WHITELIST_MANAGER_ROLE}>`
+        )
         .addFields(
           { name: 'Real Name', value: answers[0] },
           { name: 'Real Age', value: answers[1] },
@@ -92,6 +97,7 @@ module.exports = (client) => {
 
       const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
       await channel.send({
+        content: `<@&${WHITELIST_MANAGER_ROLE}>`,
         embeds: [embed],
         components: [actionRow],
       });
