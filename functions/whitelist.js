@@ -16,6 +16,9 @@ module.exports = (client) => {
   const PENDING_ROLE = '1253347271718735882'; // Replace with the role ID for pending users
   const WHITELIST_MANAGER_ROLE = '1046786167644880946'; // Replace with the whitelist manager role ID
 
+  const PENDING_IMAGE = 'https://r2.fivemanage.com/M8ZRs0ZKRHQNYpT5YIztc/images/dav_1-1.gif'; // Replace with the URL of the image for pending
+  const REJECT_IMAGE = 'https://r2.fivemanage.com/M8ZRs0ZKRHQNYpT5YIztc/images/dav_1-1.gif'; // Replace with the URL of the image for rejection
+
   const initializeWhitelistMessage = async (channel) => {
     const embed = new EmbedBuilder()
       .setTitle('Whitelist Application')
@@ -108,41 +111,40 @@ module.exports = (client) => {
       });
     }
 
-    if (
-      interaction.isButton() &&
-      ['pending-whitelist', 'reject-whitelist'].includes(interaction.customId)
-    ) {
+    if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+      const modal = new ModalBuilder()
+        .setCustomId('reject-reason-modal')
+        .setTitle('Rejection Reason');
+
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('reject-reason')
+            .setLabel('Reason for rejection')
+            .setStyle(TextInputStyle.Paragraph)
+        )
+      );
+
+      await interaction.showModal(modal);
+    }
+
+    if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
+      const reason = interaction.fields.getTextInputValue('reject-reason');
       const targetMessage = await interaction.message.fetch();
-
-      const logChannel =
-        interaction.customId === 'pending-whitelist'
-          ? interaction.guild.channels.cache.get(PENDING_CHANNEL)
-          : interaction.guild.channels.cache.get(REJECT_CHANNEL);
-
-      const targetRole =
-        interaction.customId === 'pending-whitelist'
-          ? PENDING_ROLE
-          : null;
 
       const user = targetMessage.embeds[0].footer.text.match(/\d+/)[0];
       const member = await interaction.guild.members.fetch(user);
+      const logChannel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
 
       const embed = new EmbedBuilder()
-        .setTitle('Whitelist Decision')
+        .setTitle('Whitelist Rejected')
         .setDescription(
-          `User: <@${user}>\nWhitelist Manager: <@${interaction.user.id}>`
+          `User: <@${user}>\nWhitelist Manager: <@${interaction.user.id}>\nReason: ${reason}`
         )
-        .setColor(
-          interaction.customId === 'pending-whitelist'
-            ? '#FFD700'
-            : '#FF4500'
-        );
+        .setImage(REJECT_IMAGE)
+        .setColor('#FF4500');
 
       await logChannel.send({ embeds: [embed] });
-
-      if (targetRole) {
-        await member.roles.add(targetRole);
-      }
 
       const updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
         .setFooter({ text: 'Done' });
@@ -153,10 +155,40 @@ module.exports = (client) => {
       });
 
       await interaction.reply({
-        content: `The whitelist application for <@${user}> has been marked as **${interaction.customId.replace(
-          '-whitelist',
-          ''
-        )}**.`,
+        content: `You rejected the whitelist application for <@${user}>.`,
+        ephemeral: true,
+      });
+    }
+
+    if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+      const targetMessage = await interaction.message.fetch();
+
+      const user = targetMessage.embeds[0].footer.text.match(/\d+/)[0];
+      const member = await interaction.guild.members.fetch(user);
+      const logChannel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+
+      const embed = new EmbedBuilder()
+        .setTitle('Whitelist Pending')
+        .setDescription(
+          `User: <@${user}>\nWhitelist Manager: <@${interaction.user.id}>`
+        )
+        .setImage(PENDING_IMAGE)
+        .setColor('#FFD700');
+
+      await logChannel.send({ embeds: [embed] });
+
+      await member.roles.add(PENDING_ROLE);
+
+      const updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+        .setFooter({ text: 'Done' });
+
+      await targetMessage.edit({
+        embeds: [updatedEmbed],
+        components: [],
+      });
+
+      await interaction.reply({
+        content: `You marked the whitelist application for <@${user}> as pending.`,
         ephemeral: true,
       });
     }
