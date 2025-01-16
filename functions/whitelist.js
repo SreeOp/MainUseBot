@@ -75,7 +75,7 @@ module.exports = (client) => {
       const embed = new EmbedBuilder()
         .setTitle('Whitelist Application Submitted')
         .setDescription(
-          `<@${interaction.user.id}> has submitted an application.\nWhitelist Manager Role: <@&${WHITELIST_MANAGER_ROLE}>`
+          `<@${interaction.user.id}> has submitted an application`
         )
         .addFields(
           { name: 'Real Name', value: answers[0] },
