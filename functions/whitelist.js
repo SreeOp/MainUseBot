@@ -42,58 +42,50 @@ module.exports = (client) => {
         .setTitle('Whitelist Application');
 
       const questions = [
-  { id: 'real-name', label: 'Real Name' },
-  { id: 'real-age', label: 'Real Age', minLength: 2, maxLength: 2 }, // 2 characters only
-  { id: 'character-name', label: 'Character Name' },
-  { id: 'back-story', label: 'Backstory', minLength: 100 }, // Minimum 100 characters
-  { id: 'roleplay-experience', label: 'Roleplay Experience', maxLength: 9 }, // Maximum 9 characters
-  { id: 'read-rules', label: 'Did you read the rules (yes/no)?', maxLength: 3 }, // Maximum 3 characters
-];
+        { id: 'real-name', label: 'Real Name' },
+        { id: 'real-age', label: 'Real Age' },
+        { id: 'character-name', label: 'Character Name' },
+        { id: 'roleplay-experience', label: 'Roleplay Experience' },
+        { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+      ];
 
-questions.forEach((q) => {
-  const textInput = new TextInputBuilder()
-    .setCustomId(q.id)
-    .setLabel(q.label)
-    .setStyle(
-      q.id === 'back-story' ? TextInputStyle.Paragraph : TextInputStyle.Short // Use Paragraph for long text
-    );
+      questions.forEach((q) => {
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId(q.id)
+              .setLabel(q.label)
+              .setStyle(TextInputStyle.Short)
+          )
+        );
+      });
 
-  // Set minimum and maximum lengths if defined
-  if (q.minLength) textInput.setMinLength(q.minLength);
-  if (q.maxLength) textInput.setMaxLength(q.maxLength);
+      await interaction.showModal(modal);
+    }
 
-  modal.addComponents(
-    new ActionRowBuilder().addComponents(textInput)
-  );
-});
+    if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
+      const answers = [
+        interaction.fields.getTextInputValue('real-name'),
+        interaction.fields.getTextInputValue('real-age'),
+        interaction.fields.getTextInputValue('character-name'),
+        interaction.fields.getTextInputValue('roleplay-experience'),
+        interaction.fields.getTextInputValue('read-rules'),
+      ];
 
-await interaction.showModal(modal);
-
-if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
-  const answers = [
-    interaction.fields.getTextInputValue('real-name'),
-    interaction.fields.getTextInputValue('real-age'),
-    interaction.fields.getTextInputValue('character-name'),
-    interaction.fields.getTextInputValue('back-story'), // Get Backstory input
-    interaction.fields.getTextInputValue('roleplay-experience'),
-    interaction.fields.getTextInputValue('read-rules'),
-  ];
-
-  const embed = new EmbedBuilder()
-    .setTitle('Whitelist Application Submitted')
-    .setDescription(
-      `<@${interaction.user.id}> has submitted an application.\nWhitelist Manager Role: <@&${WHITELIST_MANAGER_ROLE}>`
-    )
-    .addFields(
-      { name: 'Real Name', value: answers[0] },
-      { name: 'Real Age', value: answers[1] },
-      { name: 'Character Name', value: answers[2] },
-      { name: 'Backstory', value: answers[3] }, // Include Backstory in the embed
-      { name: 'Roleplay Experience', value: answers[4] },
-      { name: 'Read Rules', value: answers[5] }
-    )
-    .setFooter({ text: `User ID: ${interaction.user.id}` })
-    .setColor('#FFD700');
+      const embed = new EmbedBuilder()
+        .setTitle('Whitelist Application Submitted')
+        .setDescription(
+          `<@${interaction.user.id}> has submitted an application.\nWhitelist Manager Role: <@&${WHITELIST_MANAGER_ROLE}>`
+        )
+        .addFields(
+          { name: 'Real Name', value: answers[0] },
+          { name: 'Real Age', value: answers[1] },
+          { name: 'Character Name', value: answers[2] },
+          { name: 'Roleplay Experience', value: answers[3] },
+          { name: 'Read Rules', value: answers[4] }
+        )
+        .setFooter({ text: `User ID: ${interaction.user.id}` })
+        .setColor('#FFD700');
 
       const actionRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
