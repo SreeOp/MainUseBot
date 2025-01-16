@@ -42,8 +42,7 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setTitle('Whitelist Application')
         .setDescription('Click the **Apply** button to start your whitelist application.')
-        .setColor('#00FF00')
-        .setFooter({ text: 'Whitelist is currently OPEN.' });
+        .setColor('#36013F');
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -75,10 +74,9 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setTitle('Whitelist Application')
         .setDescription(
-          'Whitelist applications are currently **closed**. Please check back later.'
+          '-# The Whitelist Applications Are Temporarily **Closed**, Please Check Later 📑'
         )
-        .setColor('#FF0000')
-        .setFooter({ text: 'Whitelist is currently CLOSED.' });
+        .setColor('#36013F');
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
