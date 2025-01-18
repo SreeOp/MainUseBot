@@ -117,7 +117,7 @@ module.exports = (client) => {
       ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
       ctx.font = 'bold 28px Arial';
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = '#000000';
 
       ctx.fillText(details.username, 100, 100);
       ctx.fillText(details.flightNumber, 100, 150);
