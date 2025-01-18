@@ -44,21 +44,23 @@ module.exports = (client) => {
 
         const questions = [
           { id: 'real-name', label: 'Real Name' },
-          { id: 'real-age', label: 'Real Age' },
+          { id: 'real-age', label: 'Real Age', min: 2, max: 2 },
           { id: 'character-name', label: 'Character Name' },
-          { id: 'roleplay-experience', label: 'Roleplay Experience' },
-          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+          { id: 'roleplay-experience', label: 'Roleplay Experience', max: 9 },
+          { id: 'character-backstory', label: 'Character Backstory', min: 100 },
         ];
 
         questions.forEach((q) => {
-          modal.addComponents(
-            new ActionRowBuilder().addComponents(
-              new TextInputBuilder()
-                .setCustomId(q.id)
-                .setLabel(q.label)
-                .setStyle(TextInputStyle.Short)
-            )
-          );
+          const input = new TextInputBuilder()
+            .setCustomId(q.id)
+            .setLabel(q.label)
+            .setStyle(TextInputStyle.Paragraph);
+
+          if (q.min) input.setMinLength(q.min);
+          if (q.max) input.setMaxLength(q.max);
+          if (q.label !== 'Character Backstory') input.setStyle(TextInputStyle.Short);
+
+          modal.addComponents(new ActionRowBuilder().addComponents(input));
         });
 
         await interaction.showModal(modal);
@@ -70,18 +72,18 @@ module.exports = (client) => {
           interaction.fields.getTextInputValue('real-age'),
           interaction.fields.getTextInputValue('character-name'),
           interaction.fields.getTextInputValue('roleplay-experience'),
-          interaction.fields.getTextInputValue('read-rules'),
+          interaction.fields.getTextInputValue('character-backstory'),
         ];
 
         const embed = {
           title: 'Whitelist Application Submitted',
           description: `<@${interaction.user.id}> has submitted an application.`,
           fields: [
-            { name: 'Real Name', value: answers[0] },
-            { name: 'Real Age', value: answers[1] },
-            { name: 'Character Name', value: answers[2] },
-            { name: 'Roleplay Experience', value: answers[3] },
-            { name: 'Read Rules', value: answers[4] },
+            { name: 'Real Name', value: `\`\`\`${answers[0]}\`\`\`` },
+            { name: 'Real Age', value: `\`\`\`${answers[1]}\`\`\`` },
+            { name: 'Character Name', value: `\`\`\`${answers[2]}\`\`\`` },
+            { name: 'Roleplay Experience', value: `\`\`\`${answers[3]}\`\`\`` },
+            { name: 'Character Backstory', value: `\`\`\`${answers[4]}\`\`\`` },
           ],
           footer: { text: `User ID: ${interaction.user.id}` },
           color: 0xffd700,
@@ -99,11 +101,14 @@ module.exports = (client) => {
         );
 
         const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
-        await channel.send({
+        const message = await channel.send({
           content: `<@${interaction.user.id}>`,
           embeds: [embed],
           components: [actionRow],
         });
+
+        // Store message ID for later reference
+        message.customData = { userId: interaction.user.id };
 
         await interaction.reply({
           content: 'Your application has been submitted.',
@@ -130,81 +135,40 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('reject-reason-modal')
-          .setTitle('Rejection Reason');
-
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('reject-reason')
-              .setLabel('Reason for rejection')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
-
-        await interaction.showModal(modal);
-      }
-
-      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
-        const reason = interaction.fields.getTextInputValue('reject-reason');
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
+      async function handleApplicationAction(interaction, imageURL, channelId, role = null) {
+        const { userId } = interaction.message.customData;
+        const user = await interaction.guild.members.fetch(userId);
         const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
+          username: user.user.username,
+          flightNumber: `${Math.floor(100000 + Math.random() * 900000)}N`,
+          gate: `0${Math.floor(1 + Math.random() * 3)}`,
+          seat: `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`,
+          dateTime: moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'),
         };
 
-        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
+        const imageBuffer = await generateTicketImage(details, imageURL);
 
-        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
+        const channel = interaction.guild.channels.cache.get(channelId);
         await channel.send({
-          content: `<@${interaction.user.id}>\nReason: ${reason}`,
-          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
+          content: `<@${userId}>`,
+          files: [{ attachment: imageBuffer, name: 'response.png' }],
         });
 
-        await interaction.reply({
-          content: 'The application has been rejected.',
-          ephemeral: true,
+        if (role) await user.roles.add(role);
+
+        // Remove the buttons after the action is taken
+        await interaction.update({
+          content: 'Action has been taken on this application.',
+          components: [],
         });
       }
 
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+        await handleApplicationAction(interaction, PENDING_IMAGE_URL, PENDING_CHANNEL, PENDING_ROLE);
+      }
 
-        const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
-        };
-
-        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
-
-        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
-        await channel.send({
-          content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: 'pending.png' }],
-        });
-
-        const member = await interaction.guild.members.fetch(interaction.user.id);
-        await member.roles.add(PENDING_ROLE);
-
-        await interaction.reply({
-          content: 'The application has been marked as pending.',
-          ephemeral: true,
-        });
+      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        await handleApplicationAction(interaction, REJECT_IMAGE_URL, REJECT_CHANNEL);
       }
     } catch (error) {
       console.error('An error occurred:', error);
