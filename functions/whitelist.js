@@ -20,7 +20,7 @@ module.exports = (client) => {
   const REJECT_IMAGE_URL = 'https://i.ibb.co/M6WWZ9b/reject.png';
   
   // Load custom font
-  registerFont(path.join(__dirname, 'path/to/your/custom/font.ttf'), { family: 'CustomFont' });
+  registerFont(path.join(__dirname, 'fonts/A25-SQUANOVA.ttf), { family: 'CustomFont' });
 
   const initializeWhitelistMessage = async (channel) => {
     const embed = {
