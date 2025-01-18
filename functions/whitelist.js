@@ -131,7 +131,7 @@ module.exports = (client) => {
 
         // Use custom font for text
         ctx.font = 'bold 28px CustomFont';
-        ctx.fillStyle = '#FFFFFF';
+        ctx.fillStyle = '#000000';
 
         ctx.fillText(details.username, 100, 100);
         ctx.fillText(details.flightNumber, 100, 150);
