@@ -9,11 +9,13 @@ const {
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 
 module.exports = (client) => {
-  const APPLICATION_CHANNEL = '1255162116126539786'; // Replace with the ID of the channel where applications are sent
-  const PENDING_CHANNEL = '1313134410282962996'; // Replace with the ID of the "pending" log channel
-  const REJECT_CHANNEL = '1313134410282962996'; // Replace with the ID of the "reject" log channel
-  const BACKGROUND_IMAGE_URL = 'https://media.discordapp.net/attachments/1314692162465566750/1330034844620558367/visa-1265296804992258145.png?ex=678c82f9&is=678b3179&hm=e3273fd4c832f5ef36c8e1f0b404c088d4e60fa5dd14b67e6e6dd576c4cd839f&=&format=webp&quality=lossless&width=1024&height=331'; // Replace with the background image URL
-  const PENDING_ROLE = '1253347271718735882'; // Replace with the role ID for pending users
+  const APPLICATION_CHANNEL = '1255162116126539786'; // Replace with the channel ID for submitted applications
+  const PENDING_CHANNEL = '1313134410282962996'; // Replace with the pending log channel ID
+  const REJECT_CHANNEL = '1313134410282962996'; // Replace with the reject log channel ID
+  const PENDING_ROLE = '1253347271718735882'; // Replace with the role ID assigned for pending users
+  const WHITELIST_MANAGER_ROLE = '1046786167644880946'; // Replace with the role ID of the whitelist manager
+  const BACKGROUND_IMAGE_PENDING = 'https://i.ibb.co/zm3LBZw/pending.png'; // Background image URL for pending
+  const BACKGROUND_IMAGE_REJECT = 'https://i.ibb.co/M6WWZ9b/reject.png'; // Background image URL for reject
 
   const initializeWhitelistMessage = async (channel) => {
     const embed = {
@@ -69,20 +71,6 @@ module.exports = (client) => {
         interaction.fields.getTextInputValue('read-rules'),
       ];
 
-      const embed = {
-        title: 'Whitelist Application Submitted',
-        description: `<@${interaction.user.id}> has submitted an application.`,
-        fields: [
-          { name: 'Real Name', value: answers[0] },
-          { name: 'Real Age', value: answers[1] },
-          { name: 'Character Name', value: answers[2] },
-          { name: 'Roleplay Experience', value: answers[3] },
-          { name: 'Read Rules', value: answers[4] },
-        ],
-        footer: { text: `User ID: ${interaction.user.id}` },
-        color: 0xFFD700,
-      };
-
       const actionRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('pending-whitelist')
@@ -96,8 +84,7 @@ module.exports = (client) => {
 
       const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
       await channel.send({
-        content: `<@${interaction.user.id}>`,
-        embeds: [embed],
+        content: `<@&${WHITELIST_MANAGER_ROLE}>`,
         components: [actionRow],
       });
 
@@ -107,20 +94,19 @@ module.exports = (client) => {
       });
     }
 
-    async function generateTicketImage(details, type) {
-      const canvas = createCanvas(1024, 331);
+    async function generateTicketImage(details, backgroundImageURL) {
+      const canvas = createCanvas(800, 400);
       const ctx = canvas.getContext('2d');
-      const background = await loadImage(BACKGROUND_IMAGE_URL);
+      const background = await loadImage(backgroundImageURL);
       ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
       ctx.font = 'bold 28px Arial';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(`Status: ${type}`, 50, 50);
-      ctx.fillText(`User: ${details.username}`, 50, 100);
-      ctx.fillText(`Flight No.: ${details.flightNumber}`, 50, 150);
-      ctx.fillText(`Gate: ${details.gate}`, 50, 200);
-      ctx.fillText(`Date/Time: ${details.dateTime}`, 50, 250);
-      ctx.fillText(`Seat: ${details.seat}`, 50, 300);
+      ctx.fillText(details.username, 50, 100);
+      ctx.fillText(details.flightNumber, 50, 150);
+      ctx.fillText(details.gate, 50, 200);
+      ctx.fillText(details.dateTime, 50, 250);
+      ctx.fillText(details.seat, 50, 300);
 
       return canvas.toBuffer('image/png');
     }
@@ -157,11 +143,11 @@ module.exports = (client) => {
         seat,
       };
 
-      const imageBuffer = await generateTicketImage(details, 'Rejected');
+      const imageBuffer = await generateTicketImage(details, BACKGROUND_IMAGE_REJECT);
 
       const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
       await channel.send({
-        content: `Reason for rejection: ${reason}`,
+        content: `@${interaction.user.tag}\nReason: ${reason}`,
         files: [{ attachment: imageBuffer, name: 'rejection.png' }],
       });
 
@@ -185,7 +171,10 @@ module.exports = (client) => {
         seat,
       };
 
-      const imageBuffer = await generateTicketImage(details, 'Pending');
+      const imageBuffer = await generateTicketImage(details, BACKGROUND_IMAGE_PENDING);
+
+      const member = await interaction.guild.members.fetch(interaction.user.id);
+      await member.roles.add(PENDING_ROLE);
 
       const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
       await channel.send({
