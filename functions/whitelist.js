@@ -37,6 +37,7 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
+      // Handle the "Apply" button
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
@@ -44,44 +45,61 @@ module.exports = (client) => {
 
         const questions = [
           { id: 'real-name', label: 'Real Name' },
-          { id: 'real-age', label: 'Real Age' },
+          {
+            id: 'real-age',
+            label: 'Real Age (2 characters)',
+            min: 2,
+            max: 2,
+          },
           { id: 'character-name', label: 'Character Name' },
-          { id: 'roleplay-experience', label: 'Roleplay Experience' },
-          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+          {
+            id: 'roleplay-experience',
+            label: 'Roleplay Experience (max 9 characters)',
+            max: 9,
+          },
+          {
+            id: 'character-backstory',
+            label: 'Character Backstory (min 100 characters)',
+            min: 100,
+          },
         ];
 
         questions.forEach((q) => {
-          modal.addComponents(
-            new ActionRowBuilder().addComponents(
-              new TextInputBuilder()
-                .setCustomId(q.id)
-                .setLabel(q.label)
-                .setStyle(TextInputStyle.Short)
-            )
-          );
+          const textInput = new TextInputBuilder()
+            .setCustomId(q.id)
+            .setLabel(q.label)
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(true);
+
+          if (q.min) textInput.setMinLength(q.min);
+          if (q.max) textInput.setMaxLength(q.max);
+
+          modal.addComponents(new ActionRowBuilder().addComponents(textInput));
         });
 
         await interaction.showModal(modal);
       }
 
+      // Handle the application modal submission
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
         const answers = {
-          'Real Name': interaction.fields.getTextInputValue('real-name'),
-          'Real Age': interaction.fields.getTextInputValue('real-age'),
-          'Character Name': interaction.fields.getTextInputValue('character-name'),
-          'Roleplay Experience': interaction.fields.getTextInputValue('roleplay-experience'),
-          'Did you read the rules (yes/no)?': interaction.fields.getTextInputValue('read-rules'),
+          realName: interaction.fields.getTextInputValue('real-name'),
+          realAge: interaction.fields.getTextInputValue('real-age'),
+          characterName: interaction.fields.getTextInputValue('character-name'),
+          roleplayExperience: interaction.fields.getTextInputValue('roleplay-experience'),
+          characterBackstory: interaction.fields.getTextInputValue('character-backstory'),
         };
-
-        const fields = Object.keys(answers).map((question) => ({
-          name: question,
-          value: `\`\`\`${answers[question]}\`\`\``,
-        }));
 
         const embed = {
           title: 'Whitelist Application Submitted',
           description: `<@${interaction.user.id}> has submitted an application.`,
-          fields: fields,
+          fields: [
+            { name: 'Real Name', value: `\`\`\`${answers.realName}\`\`\`` },
+            { name: 'Real Age', value: `\`\`\`${answers.realAge}\`\`\`` },
+            { name: 'Character Name', value: `\`\`\`${answers.characterName}\`\`\`` },
+            { name: 'Roleplay Experience', value: `\`\`\`${answers.roleplayExperience}\`\`\`` },
+            { name: 'Character Backstory', value: `\`\`\`${answers.characterBackstory}\`\`\`` },
+          ],
           footer: { text: `User ID: ${interaction.user.id}` },
           color: 0xffd700,
         };
@@ -110,8 +128,9 @@ module.exports = (client) => {
         });
       }
 
+      // Function to generate ticket image
       async function generateTicketImage(details, imageURL) {
-        const canvas = createCanvas(1024, 331);
+        const canvas = createCanvas(800, 400);
         const ctx = canvas.getContext('2d');
         const background = await loadImage(imageURL);
 
@@ -129,6 +148,39 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
+      // Handle the "Pending" button
+      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+
+        const details = {
+          username: interaction.message.embeds[0].fields[0].value.replace(/`/g, ''),
+          flightNumber,
+          gate,
+          dateTime,
+          seat,
+        };
+
+        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
+
+        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+        await channel.send({
+          content: `<@${interaction.message.embeds[0].footer.text.match(/\d+/)[0]}>`,
+          files: [{ attachment: imageBuffer, name: 'pending.png' }],
+        });
+
+        await interaction.update({
+          embeds: [interaction.message.embeds[0].setFooter({ text: 'Reviewed' })],
+          components: [],
+        });
+
+        const member = await interaction.guild.members.fetch(interaction.message.embeds[0].footer.text.match(/\d+/)[0]);
+        await member.roles.add(PENDING_ROLE);
+      }
+
+      // Handle the "Reject" button
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
         const modal = new ModalBuilder()
           .setCustomId('reject-reason-modal')
@@ -154,7 +206,7 @@ module.exports = (client) => {
         const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
 
         const details = {
-          username: interaction.user.username,
+          username: interaction.message.embeds[0].fields[0].value.replace(/`/g, ''),
           flightNumber,
           gate,
           dateTime,
@@ -165,55 +217,8 @@ module.exports = (client) => {
 
         const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
         await channel.send({
-          content: `<@${interaction.user.id}>\nReason: \`${reason}\``,
+          content: `<@${interaction.message.embeds[0].footer.text.match(/\d+/)[0]}>\nReason: ${reason}`,
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        await interaction.reply({
-          content: 'The application has been rejected.',
-          ephemeral: true,
-        });
-      }
-
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
-        const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
-        };
-
-        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
-
-        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
-        await channel.send({
-          content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: 'pending.png' }],
-        });
-
-        const member = await interaction.guild.members.fetch(interaction.user.id);
-        await member.roles.add(PENDING_ROLE);
-
-        await interaction.reply({
-          content: 'The application has been marked as pending.',
-          ephemeral: true,
-        });
-      }
-    } catch (error) {
-      console.error('An error occurred:', error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'An error occurred. Please try again later.', ephemeral: true });
-      } else {
-        await interaction.reply({ content: 'An error occurred. Please try again later.', ephemeral: true });
-      }
-    }
-  });
-
-  return initializeWhitelistMessage;
-};
+        await interaction.update({
