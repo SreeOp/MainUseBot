@@ -29,7 +29,7 @@ module.exports = (client) => {
 
   // Function to create an image with user details
   const createCustomImage = async (userName, status, additionalText = '') => {
-    const canvas = createCanvas(800, 400);
+    const canvas = createCanvas(1024, 331);
     const ctx = canvas.getContext('2d');
 
     // Load background image
