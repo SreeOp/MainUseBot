@@ -5,6 +5,7 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  EmbedBuilder,
 } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const moment = require('moment-timezone');
@@ -19,11 +20,10 @@ module.exports = (client) => {
   const REJECT_IMAGE_URL = 'https://i.ibb.co/M6WWZ9b/reject.png';
 
   const initializeWhitelistMessage = async (channel) => {
-    const embed = {
-      title: 'Whitelist Application',
-      description: 'Click the **Apply** button to start your whitelist application.',
-      color: 0xff4500,
-    };
+    const embed = new EmbedBuilder()
+      .setTitle('Whitelist Application')
+      .setDescription('Click the **Apply** button to start your whitelist application.')
+      .setColor(0xff4500);
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -54,11 +54,10 @@ module.exports = (client) => {
           const input = new TextInputBuilder()
             .setCustomId(q.id)
             .setLabel(q.label)
-            .setStyle(TextInputStyle.Paragraph);
+            .setStyle(q.label === 'Character Backstory' ? TextInputStyle.Paragraph : TextInputStyle.Short);
 
           if (q.min) input.setMinLength(q.min);
           if (q.max) input.setMaxLength(q.max);
-          if (q.label !== 'Character Backstory') input.setStyle(TextInputStyle.Short);
 
           modal.addComponents(new ActionRowBuilder().addComponents(input));
         });
@@ -67,6 +66,8 @@ module.exports = (client) => {
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
+        await interaction.deferReply({ ephemeral: true });
+
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
           interaction.fields.getTextInputValue('real-age'),
@@ -75,19 +76,18 @@ module.exports = (client) => {
           interaction.fields.getTextInputValue('character-backstory'),
         ];
 
-        const embed = {
-          title: 'Whitelist Application Submitted',
-          description: `<@${interaction.user.id}> has submitted an application.`,
-          fields: [
+        const embed = new EmbedBuilder()
+          .setTitle('Whitelist Application Submitted')
+          .setDescription(`<@${interaction.user.id}> has submitted an application.`)
+          .addFields(
             { name: 'Real Name', value: `\`\`\`${answers[0]}\`\`\`` },
             { name: 'Real Age', value: `\`\`\`${answers[1]}\`\`\`` },
             { name: 'Character Name', value: `\`\`\`${answers[2]}\`\`\`` },
             { name: 'Roleplay Experience', value: `\`\`\`${answers[3]}\`\`\`` },
-            { name: 'Character Backstory', value: `\`\`\`${answers[4]}\`\`\`` },
-          ],
-          footer: { text: `User ID: ${interaction.user.id}` },
-          color: 0xffd700,
-        };
+            { name: 'Character Backstory', value: `\`\`\`${answers[4]}\`\`\`` }
+          )
+          .setFooter({ text: `User ID: ${interaction.user.id}` })
+          .setColor(0xffd700);
 
         const actionRow = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
@@ -107,13 +107,12 @@ module.exports = (client) => {
           components: [actionRow],
         });
 
-        // Store message ID for later reference
-        message.customData = { userId: interaction.user.id };
-
-        await interaction.reply({
+        await interaction.followUp({
           content: 'Your application has been submitted.',
           ephemeral: true,
         });
+
+        message.customData = { userId: interaction.user.id };
       }
 
       async function generateTicketImage(details, imageURL) {
@@ -136,6 +135,8 @@ module.exports = (client) => {
       }
 
       async function handleApplicationAction(interaction, imageURL, channelId, role = null) {
+        await interaction.deferUpdate();
+
         const { userId } = interaction.message.customData;
         const user = await interaction.guild.members.fetch(userId);
         const details = {
@@ -156,8 +157,7 @@ module.exports = (client) => {
 
         if (role) await user.roles.add(role);
 
-        // Remove the buttons after the action is taken
-        await interaction.update({
+        await interaction.editReply({
           content: 'Action has been taken on this application.',
           components: [],
         });
