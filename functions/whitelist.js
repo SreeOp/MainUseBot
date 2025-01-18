@@ -5,61 +5,37 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  Events,
 } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const moment = require('moment-timezone');
 
-const APPLICATION_CHANNEL = '1255162116126539786'; // ID of the application channel
-const PENDING_CHANNEL = '1313134410282962996'; // ID of the "pending" log channel
-const REJECT_CHANNEL = '1313134410282962996'; // ID of the "reject" log channel
-const PENDING_ROLE = '1253347271718735882'; // Role ID for pending users
-const PENDING_IMAGE_URL = 'https://i.ibb.co/zm3LBZw/pending.png'; // Pending image URL
-const REJECT_IMAGE_URL = 'https://i.ibb.co/M6WWZ9b/reject.png'; // Reject image URL
-
 module.exports = (client) => {
+  // Configuration
+  const APPLICATION_CHANNEL = '1255162116126539786';
+  const PENDING_CHANNEL = '1313134410282962996';
+  const REJECT_CHANNEL = '1313134410282962996';
+  const PENDING_ROLE = '1253347271718735882';
+  const PENDING_IMAGE_URL = 'https://i.ibb.co/zm3LBZw/pending.png';
+  const REJECT_IMAGE_URL = 'https://i.ibb.co/M6WWZ9b/reject.png';
+
   const initializeWhitelistMessage = async (channel) => {
-    try {
-      const embed = {
-        title: 'Whitelist Application',
-        description: 'Click the **Apply** button to start your whitelist application.',
-        color: 0xff4500,
-      };
+    const embed = {
+      title: 'Whitelist Application',
+      description: 'Click the **Apply** button to start your whitelist application.',
+      color: 0xff4500,
+    };
 
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('apply-whitelist')
-          .setLabel('Apply')
-          .setStyle(ButtonStyle.Primary)
-      );
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('apply-whitelist')
+        .setLabel('Apply')
+        .setStyle(ButtonStyle.Primary)
+    );
 
-      await channel.send({ embeds: [embed], components: [row] });
-    } catch (error) {
-      console.error('Error initializing whitelist message:', error);
-    }
+    await channel.send({ embeds: [embed], components: [row] });
   };
 
-  const generateTicketImage = async (details, imageURL) => {
-    const canvas = createCanvas(1024, 331);
-    const ctx = canvas.getContext('2d');
-    const background = await loadImage(imageURL);
-
-    // Draw background
-    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-    // Add text
-    ctx.font = 'bold 28px Arial';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(details.username, 100, 100);
-    ctx.fillText(details.flightNumber, 100, 150);
-    ctx.fillText(details.gate, 100, 200);
-    ctx.fillText(details.dateTime, 100, 250);
-    ctx.fillText(details.seat, 100, 300);
-
-    return canvas.toBuffer('image/png');
-  };
-
-  client.on(Events.InteractionCreate, async (interaction) => {
+  client.on('interactionCreate', async (interaction) => {
     try {
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
         const modal = new ModalBuilder()
@@ -89,17 +65,24 @@ module.exports = (client) => {
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
-        const answers = [
-          interaction.fields.getTextInputValue('real-name'),
-          interaction.fields.getTextInputValue('real-age'),
-          interaction.fields.getTextInputValue('character-name'),
-          interaction.fields.getTextInputValue('roleplay-experience'),
-          interaction.fields.getTextInputValue('read-rules'),
-        ];
+        const answers = {
+          'Real Name': interaction.fields.getTextInputValue('real-name'),
+          'Real Age': interaction.fields.getTextInputValue('real-age'),
+          'Character Name': interaction.fields.getTextInputValue('character-name'),
+          'Roleplay Experience': interaction.fields.getTextInputValue('roleplay-experience'),
+          'Did you read the rules (yes/no)?': interaction.fields.getTextInputValue('read-rules'),
+        };
+
+        const fields = Object.keys(answers).map((question) => ({
+          name: question,
+          value: `\`\`\`${answers[question]}\`\`\``,
+        }));
 
         const embed = {
           title: 'Whitelist Application Submitted',
           description: `<@${interaction.user.id}> has submitted an application.`,
+          fields: fields,
+          footer: { text: `User ID: ${interaction.user.id}` },
           color: 0xffd700,
         };
 
@@ -127,11 +110,76 @@ module.exports = (client) => {
         });
       }
 
+      async function generateTicketImage(details, imageURL) {
+        const canvas = createCanvas(800, 400);
+        const ctx = canvas.getContext('2d');
+        const background = await loadImage(imageURL);
+
+        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+        ctx.font = 'bold 28px Arial';
+        ctx.fillStyle = '#FFFFFF';
+
+        ctx.fillText(details.username, 100, 100);
+        ctx.fillText(details.flightNumber, 100, 150);
+        ctx.fillText(details.gate, 100, 200);
+        ctx.fillText(details.dateTime, 100, 250);
+        ctx.fillText(details.seat, 100, 300);
+
+        return canvas.toBuffer('image/png');
+      }
+
+      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        const modal = new ModalBuilder()
+          .setCustomId('reject-reason-modal')
+          .setTitle('Rejection Reason');
+
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('reject-reason')
+              .setLabel('Reason for rejection')
+              .setStyle(TextInputStyle.Paragraph)
+          )
+        );
+
+        await interaction.showModal(modal);
+      }
+
+      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
+        const reason = interaction.fields.getTextInputValue('reject-reason');
+        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+
+        const details = {
+          username: interaction.user.username,
+          flightNumber,
+          gate,
+          dateTime,
+          seat,
+        };
+
+        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
+
+        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
+        await channel.send({
+          content: `<@${interaction.user.id}>\nReason: \`${reason}\``,
+          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
+        });
+
+        await interaction.reply({
+          content: 'The application has been rejected.',
+          ephemeral: true,
+        });
+      }
+
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY HH:mm:ss');
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
 
         const details = {
           username: interaction.user.username,
@@ -157,59 +205,14 @@ module.exports = (client) => {
           ephemeral: true,
         });
       }
-
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('reject-reason-modal')
-          .setTitle('Rejection Reason');
-
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('reject-reason')
-              .setLabel('Reason for rejection')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
-
-        await interaction.showModal(modal);
-      }
-
-      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
-        const reason = interaction.fields.getTextInputValue('reject-reason');
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY HH:mm:ss');
-
-        const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
-        };
-
-        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
-
-        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
-        await channel.send({
-          content: `<@${interaction.user.id}>\nReason: ${reason}`,
-          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
-        });
-
-        await interaction.reply({
-          content: 'The application has been rejected.',
-          ephemeral: true,
-        });
-      }
     } catch (error) {
-      console.error('Error during interaction:', error);
+      console.error('An error occurred:', error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: 'An error occurred. Please try again later.', ephemeral: true });
+      } else {
+        await interaction.reply({ content: 'An error occurred. Please try again later.', ephemeral: true });
+      }
     }
-  });
-
-  client.on('error', (error) => {
-    console.error('Client error:', error);
   });
 
   return initializeWhitelistMessage;
