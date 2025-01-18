@@ -6,7 +6,7 @@ const {
   TextInputBuilder,
   TextInputStyle,
 } = require('discord.js');
-const { createCanvas, loadImage, loadFont } = require('@napi-rs/canvas');
+const { createCanvas, loadImage, registerFont } = require('@napi-rs/canvas');
 const moment = require('moment-timezone');
 const path = require('path');
 
@@ -21,7 +21,7 @@ module.exports = (client) => {
 
   // Load custom font
   const fontPath = path.join(__dirname, 'fonts/A25-SQUANOVA.ttf');
-  loadFont(fontPath, { family: 'CustomFont' });
+  registerFont(fontPath, { family: 'CustomFont' });
 
   const initializeWhitelistMessage = async (channel) => {
     const embed = {
