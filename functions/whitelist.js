@@ -123,13 +123,13 @@ module.exports = (client) => {
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
         ctx.font = 'bold 28px Arial';
-        ctx.fillStyle = '#FFFFFF';
+        ctx.fillStyle = '#000000';
 
-        ctx.fillText(details.username, 100, 100);
-        ctx.fillText(details.flightNumber, 100, 150);
-        ctx.fillText(details.gate, 100, 200);
-        ctx.fillText(details.dateTime, 100, 250);
-        ctx.fillText(details.seat, 100, 300);
+        ctx.fillText(details.username, 280, 180);
+        ctx.fillText(details.flightNumber, 80, 280);
+        ctx.fillText(details.gate, 240, 280);
+        ctx.fillText(details.dateTime, 520, 280);
+        ctx.fillText(details.seat, 720, 180);
 
         return canvas.toBuffer('image/png');
       }
