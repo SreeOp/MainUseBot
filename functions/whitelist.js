@@ -134,6 +134,56 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
+      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        const modal = new ModalBuilder()
+          .setCustomId('reject-reason-modal')
+          .setTitle('Reject Reason');
+
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('reject-reason')
+              .setLabel('Reason for rejection')
+              .setStyle(TextInputStyle.Paragraph)
+          )
+        );
+
+        await interaction.showModal(modal);
+      }
+
+      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
+        await interaction.deferReply({ ephemeral: true });
+
+        const reason = interaction.fields.getTextInputValue('reject-reason');
+        const { userId } = interaction.message.customData;
+        const user = await interaction.guild.members.fetch(userId);
+
+        const details = {
+          username: user.user.username,
+          flightNumber: `${Math.floor(100000 + Math.random() * 900000)}N`,
+          gate: `0${Math.floor(1 + Math.random() * 3)}`,
+          seat: `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`,
+          dateTime: moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'),
+        };
+
+        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
+
+        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
+        await channel.send({
+          content: `<@${userId}>\n**Reason:** ${reason}`,
+          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
+        });
+
+        await interaction.followUp({
+          content: 'The application has been rejected and the reason has been sent.',
+          ephemeral: true,
+        });
+      }
+
+      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+        await handleApplicationAction(interaction, PENDING_IMAGE_URL, PENDING_CHANNEL, PENDING_ROLE);
+      }
+
       async function handleApplicationAction(interaction, imageURL, channelId, role = null) {
         await interaction.deferUpdate();
 
@@ -161,14 +211,6 @@ module.exports = (client) => {
           content: 'Action has been taken on this application.',
           components: [],
         });
-      }
-
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        await handleApplicationAction(interaction, PENDING_IMAGE_URL, PENDING_CHANNEL, PENDING_ROLE);
-      }
-
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        await handleApplicationAction(interaction, REJECT_IMAGE_URL, REJECT_CHANNEL);
       }
     } catch (error) {
       console.error('An error occurred:', error);
