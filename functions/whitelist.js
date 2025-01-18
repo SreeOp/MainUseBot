@@ -91,17 +91,17 @@ module.exports = (client) => {
 
         const actionRow = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
-            .setCustomId('pending-whitelist')
+            .setCustomId(`pending-whitelist-${interaction.user.id}`)
             .setLabel('Pending')
             .setStyle(ButtonStyle.Secondary),
           new ButtonBuilder()
-            .setCustomId('reject-whitelist')
+            .setCustomId(`reject-whitelist-${interaction.user.id}`)
             .setLabel('Reject')
             .setStyle(ButtonStyle.Danger)
         );
 
         const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
-        const message = await channel.send({
+        await channel.send({
           content: `<@${interaction.user.id}>`,
           embeds: [embed],
           components: [actionRow],
@@ -111,8 +111,6 @@ module.exports = (client) => {
           content: 'Your application has been submitted.',
           ephemeral: true,
         });
-
-        message.customData = { userId: interaction.user.id };
       }
 
       async function generateTicketImage(details, imageURL) {
@@ -123,7 +121,7 @@ module.exports = (client) => {
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
         ctx.font = 'bold 28px Arial';
-        ctx.fillStyle = '#000000';
+        ctx.fillStyle = '#FFFFFF';
 
         ctx.fillText(details.username, 280, 180);
         ctx.fillText(details.flightNumber, 80, 280);
@@ -134,9 +132,11 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+      if (interaction.isButton() && interaction.customId.startsWith('reject-whitelist')) {
+        const userId = interaction.customId.split('-')[2];
+
         const modal = new ModalBuilder()
-          .setCustomId('reject-reason-modal')
+          .setCustomId(`reject-reason-modal-${userId}`)
           .setTitle('Reject Reason');
 
         modal.addComponents(
@@ -151,11 +151,9 @@ module.exports = (client) => {
         await interaction.showModal(modal);
       }
 
-      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
-        await interaction.deferReply({ ephemeral: true });
-
+      if (interaction.isModalSubmit() && interaction.customId.startsWith('reject-reason-modal')) {
+        const userId = interaction.customId.split('-')[2];
         const reason = interaction.fields.getTextInputValue('reject-reason');
-        const { userId } = interaction.message.customData;
         const user = await interaction.guild.members.fetch(userId);
 
         const details = {
@@ -174,20 +172,20 @@ module.exports = (client) => {
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        await interaction.followUp({
+        await interaction.reply({
           content: 'The application has been rejected and the reason has been sent.',
           ephemeral: true,
         });
       }
 
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+      if (interaction.isButton() && interaction.customId.startsWith('pending-whitelist')) {
         await handleApplicationAction(interaction, PENDING_IMAGE_URL, PENDING_CHANNEL, PENDING_ROLE);
       }
 
       async function handleApplicationAction(interaction, imageURL, channelId, role = null) {
         await interaction.deferUpdate();
 
-        const { userId } = interaction.message.customData;
+        const userId = interaction.customId.split('-')[2];
         const user = await interaction.guild.members.fetch(userId);
         const details = {
           username: user.user.username,
