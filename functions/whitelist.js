@@ -6,9 +6,8 @@ const {
   TextInputBuilder,
   TextInputStyle,
 } = require('discord.js');
-const { createCanvas, loadImage, registerFont } = require('@napi-rs/canvas');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const moment = require('moment-timezone');
-const path = require('path');
 
 module.exports = (client) => {
   // Configuration
@@ -18,10 +17,6 @@ module.exports = (client) => {
   const PENDING_ROLE = '1253347271718735882';
   const PENDING_IMAGE_URL = 'https://i.ibb.co/zm3LBZw/pending.png';
   const REJECT_IMAGE_URL = 'https://i.ibb.co/M6WWZ9b/reject.png';
-
-  // Load custom font
-  const fontPath = path.join(__dirname, 'fonts/A25-SQUANOVA.ttf');
-  registerFont(fontPath, { family: 'CustomFont' });
 
   const initializeWhitelistMessage = async (channel) => {
     const embed = {
@@ -52,7 +47,7 @@ module.exports = (client) => {
           { id: 'real-age', label: 'Real Age' },
           { id: 'character-name', label: 'Character Name' },
           { id: 'roleplay-experience', label: 'Roleplay Experience' },
-          { id: 'character-backstory', label: 'Character Backstory' },
+          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
         ];
 
         questions.forEach((q) => {
@@ -62,8 +57,6 @@ module.exports = (client) => {
                 .setCustomId(q.id)
                 .setLabel(q.label)
                 .setStyle(TextInputStyle.Short)
-                .setMinLength(q.id === 'real-age' ? 2 : (q.id === 'roleplay-experience' ? 9 : 0))
-                .setMaxLength(q.id === 'character-backstory' ? 100 : (q.id === 'roleplay-experience' ? 9 : 0))
             )
           );
         });
@@ -77,18 +70,18 @@ module.exports = (client) => {
           interaction.fields.getTextInputValue('real-age'),
           interaction.fields.getTextInputValue('character-name'),
           interaction.fields.getTextInputValue('roleplay-experience'),
-          interaction.fields.getTextInputValue('character-backstory'),
+          interaction.fields.getTextInputValue('read-rules'),
         ];
 
         const embed = {
           title: 'Whitelist Application Submitted',
           description: `<@${interaction.user.id}> has submitted an application.`,
           fields: [
-            { name: 'Real Name', value: `\`\`\`${answers[0]}\`\`\`` },
-            { name: 'Real Age', value: `\`\`\`${answers[1]}\`\`\`` },
-            { name: 'Character Name', value: `\`\`\`${answers[2]}\`\`\`` },
-            { name: 'Roleplay Experience', value: `\`\`\`${answers[3]}\`\`\`` },
-            { name: 'Character Backstory', value: `\`\`\`${answers[4]}\`\`\`` },
+            { name: 'Real Name', value: answers[0] },
+            { name: 'Real Age', value: answers[1] },
+            { name: 'Character Name', value: answers[2] },
+            { name: 'Roleplay Experience', value: answers[3] },
+            { name: 'Read Rules', value: answers[4] },
           ],
           footer: { text: `User ID: ${interaction.user.id}` },
           color: 0xffd700,
@@ -119,14 +112,13 @@ module.exports = (client) => {
       }
 
       async function generateTicketImage(details, imageURL) {
-        const canvas = createCanvas(1024, 331);
+        const canvas = createCanvas(800, 400);
         const ctx = canvas.getContext('2d');
         const background = await loadImage(imageURL);
 
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-        // Use custom font
-        ctx.font = 'bold 28px CustomFont';
+        ctx.font = 'bold 28px Arial';
         ctx.fillStyle = '#FFFFFF';
 
         ctx.fillText(details.username, 100, 100);
@@ -208,24 +200,6 @@ module.exports = (client) => {
 
         const member = await interaction.guild.members.fetch(interaction.user.id);
         await member.roles.add(PENDING_ROLE);
-
-        // Disable buttons after selection
-        const message = await interaction.message.fetch();
-        const updatedRow = new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId('pending-whitelist')
-              .setLabel('Pending')
-              .setStyle(ButtonStyle.Secondary)
-              .setDisabled(true),
-            new ButtonBuilder()
-              .setCustomId('reject-whitelist')
-              .setLabel('Reject')
-              .setStyle(ButtonStyle.Danger)
-              .setDisabled(true)
-          );
-
-        await message.edit({ components: [updatedRow] });
 
         await interaction.reply({
           content: 'The application has been marked as pending.',
