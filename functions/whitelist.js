@@ -37,31 +37,84 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
-      if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('whitelist-application')
-          .setTitle('Whitelist Application');
+      if (interaction.isButton()) {
+        if (interaction.customId === 'apply-whitelist') {
+          const modal = new ModalBuilder()
+            .setCustomId('whitelist-application')
+            .setTitle('Whitelist Application');
 
-        const questions = [
-          { id: 'real-name', label: 'Real Name' },
-          { id: 'real-age', label: 'Real Age' },
-          { id: 'character-name', label: 'Character Name' },
-          { id: 'roleplay-experience', label: 'Roleplay Experience' },
-          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
-        ];
+          const questions = [
+            { id: 'real-name', label: 'Real Name' },
+            { id: 'real-age', label: 'Real Age' },
+            { id: 'character-name', label: 'Character Name' },
+            { id: 'roleplay-experience', label: 'Roleplay Experience' },
+            { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+          ];
 
-        questions.forEach((q) => {
+          questions.forEach((q) => {
+            modal.addComponents(
+              new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                  .setCustomId(q.id)
+                  .setLabel(q.label)
+                  .setStyle(TextInputStyle.Short)
+              )
+            );
+          });
+
+          await interaction.showModal(modal);
+        }
+
+        if (interaction.customId === 'reject-whitelist') {
+          const modal = new ModalBuilder()
+            .setCustomId('reject-reason-modal')
+            .setTitle('Rejection Reason');
+
           modal.addComponents(
             new ActionRowBuilder().addComponents(
               new TextInputBuilder()
-                .setCustomId(q.id)
-                .setLabel(q.label)
-                .setStyle(TextInputStyle.Short)
+                .setCustomId('reject-reason')
+                .setLabel('Reason for rejection')
+                .setStyle(TextInputStyle.Paragraph)
             )
           );
-        });
 
-        await interaction.showModal(modal);
+          await interaction.showModal(modal);
+        }
+
+        if (interaction.customId === 'pending-whitelist') {
+          const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+          const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+          const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+          const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+
+          const details = {
+            username: interaction.user.username,
+            flightNumber,
+            gate,
+            dateTime,
+            seat,
+          };
+
+          const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
+
+          const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+          await channel.send({
+            content: `<@${interaction.user.id}>`,
+            files: [{ attachment: imageBuffer, name: 'pending.png' }],
+          });
+
+          const member = await interaction.guild.members.fetch(interaction.user.id);
+          await member.roles.add(PENDING_ROLE);
+
+          // Respond to interaction in time
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+              content: 'The application has been marked as pending.',
+              ephemeral: true,
+            });
+          }
+        }
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
@@ -105,46 +158,13 @@ module.exports = (client) => {
           components: [actionRow],
         });
 
-        await interaction.reply({
-          content: 'Your application has been submitted.',
-          ephemeral: true,
-        });
-      }
-
-      async function generateTicketImage(details, imageURL) {
-        const canvas = createCanvas(1024, 331);
-        const ctx = canvas.getContext('2d');
-        const background = await loadImage(imageURL);
-
-        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-        ctx.font = 'bold 28px Arial';
-        ctx.fillStyle = '#FFFFFF';
-
-        ctx.fillText(details.username, 100, 100);
-        ctx.fillText(details.flightNumber, 100, 150);
-        ctx.fillText(details.gate, 100, 200);
-        ctx.fillText(details.dateTime, 100, 250);
-        ctx.fillText(details.seat, 100, 300);
-
-        return canvas.toBuffer('image/png');
-      }
-
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('reject-reason-modal')
-          .setTitle('Rejection Reason');
-
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('reject-reason')
-              .setLabel('Reason for rejection')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
-
-        await interaction.showModal(modal);
+        // Respond to interaction in time
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'Your application has been submitted.',
+            ephemeral: true,
+          });
+        }
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
@@ -170,51 +190,43 @@ module.exports = (client) => {
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        await interaction.reply({
-          content: 'The application has been rejected.',
-          ephemeral: true,
-        });
-      }
-
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
-        const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
-        };
-
-        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
-
-        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
-        await channel.send({
-          content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: 'pending.png' }],
-        });
-
-        const member = await interaction.guild.members.fetch(interaction.user.id);
-        await member.roles.add(PENDING_ROLE);
-
-        await interaction.reply({
-          content: 'The application has been marked as pending.',
-          ephemeral: true,
-        });
+        // Respond to interaction in time
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'The application has been rejected.',
+            ephemeral: true,
+          });
+        }
       }
     } catch (error) {
       console.error('An error occurred:', error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'An error occurred. Please try again later.', ephemeral: true });
-      } else {
-        await interaction.reply({ content: 'An error occurred. Please try again later.', ephemeral: true });
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({
+          content: 'An error occurred. Please try again later.',
+          ephemeral: true,
+        });
       }
     }
   });
+
+  const generateTicketImage = async (details, imageURL) => {
+    const canvas = createCanvas(1024, 331);
+    const ctx = canvas.getContext('2d');
+    const background = await loadImage(imageURL);
+
+    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+    ctx.font = 'bold 28px Arial';
+    ctx.fillStyle = '#FFFFFF';
+
+    ctx.fillText(details.username, 100, 100);
+    ctx.fillText(details.flightNumber, 100, 150);
+    ctx.fillText(details.gate, 100, 200);
+    ctx.fillText(details.dateTime, 100, 250);
+    ctx.fillText(details.seat, 100, 300);
+
+    return canvas.toBuffer('image/png');
+  };
 
   return initializeWhitelistMessage;
 };
