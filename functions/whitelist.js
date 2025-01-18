@@ -142,7 +142,7 @@ module.exports = (client) => {
 
       // Generate Image
       async function generateTicketImage(details, imageURL) {
-        const canvas = createCanvas(800, 400);
+        const canvas = createCanvas(1024, 331);
         const ctx = canvas.getContext('2d');
         const background = await loadImage(imageURL);
 
