@@ -1,5 +1,4 @@
 const {
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -7,24 +6,60 @@ const {
   TextInputBuilder,
   TextInputStyle,
 } = require('discord.js');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { writeFileSync } = require('fs');
+const path = require('path');
 
 module.exports = (client) => {
   const APPLICATION_CHANNEL = '1255162116126539786'; // Replace with the ID of the channel where applications are sent
   const PENDING_CHANNEL = '1313134410282962996'; // Replace with the ID of the "pending" log channel
   const REJECT_CHANNEL = '1313134410282962996'; // Replace with the ID of the "reject" log channel
+  const BACKGROUND_IMAGE_URL = 'https://media.discordapp.net/attachments/1188478795850723479/1313479605054865525/nrp_approved.png?ex=678c44f5&is=678af375&hm=45faed2df509c304b23d6bbc3fd0956381c3009030713648071ffd022768c89f&=&format=webp&quality=lossless&width=1024&height=413'; // Replace with the background image URL
 
   const PENDING_ROLE = '1253347271718735882'; // Replace with the role ID for pending users
-  const WHITELIST_MANAGER_ROLE = '1046786167644880946'; // Replace with the whitelist manager role ID
 
-  const PENDING_IMAGE = 'https://r2.fivemanage.com/M8ZRs0ZKRHQNYpT5YIztc/images/dav_1-1.gif'; // Replace with the URL of the image for pending
-  const REJECT_IMAGE = 'https://r2.fivemanage.com/M8ZRs0ZKRHQNYpT5YIztc/images/dav_1-1.gif'; // Replace with the URL of the image for rejection
+  // Helper function to generate a random flight number
+  const generateFlightNumber = () => `${Math.floor(10000 + Math.random() * 90000)}N`;
+
+  // Helper function to generate a random gate
+  const generateGate = () => `0${Math.floor(1 + Math.random() * 3)}`;
+
+  // Helper function to generate a random seat
+  const generateSeat = () => `${Math.floor(1 + Math.random() * 100)} ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
+
+  // Function to create an image with user details
+  const createCustomImage = async (userName, status, additionalText = '') => {
+    const canvas = createCanvas(800, 400);
+    const ctx = canvas.getContext('2d');
+
+    // Load background image
+    const background = await loadImage(BACKGROUND_IMAGE_URL);
+    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+    // Text settings
+    ctx.font = '30px Arial';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+
+    // Add text to the canvas
+    ctx.fillText(`Status: ${status}`, canvas.width / 2, 50);
+    ctx.fillText(`Name: ${userName}`, canvas.width / 2, 100);
+    ctx.fillText(`Flight: ${generateFlightNumber()}`, canvas.width / 2, 150);
+    ctx.fillText(`Gate: ${generateGate()}`, canvas.width / 2, 200);
+    ctx.fillText(`Seat: ${generateSeat()}`, canvas.width / 2, 250);
+    ctx.fillText(`Date & Time: ${new Date().toLocaleString()}`, canvas.width / 2, 300);
+
+    if (additionalText) {
+      ctx.fillText(`Reason: ${additionalText}`, canvas.width / 2, 350);
+    }
+
+    // Save the image and return the file path
+    const filePath = path.join(__dirname, `whitelist_${Date.now()}.png`);
+    writeFileSync(filePath, canvas.toBuffer('image/png'));
+    return filePath;
+  };
 
   const initializeWhitelistMessage = async (channel) => {
-    const embed = new EmbedBuilder()
-      .setTitle('Whitelist Application')
-      .setDescription('Click the **Apply** button to start your whitelist application.')
-      .setColor('#FF4500');
-
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('apply-whitelist')
@@ -32,7 +67,10 @@ module.exports = (client) => {
         .setStyle(ButtonStyle.Primary)
     );
 
-    await channel.send({ embeds: [embed], components: [row] });
+    await channel.send({
+      content: 'Click the **Apply** button to start your whitelist application.',
+      components: [row],
+    });
   };
 
   client.on('interactionCreate', async (interaction) => {
@@ -72,21 +110,6 @@ module.exports = (client) => {
         interaction.fields.getTextInputValue('read-rules'),
       ];
 
-      const embed = new EmbedBuilder()
-        .setTitle('Whitelist Application Submitted')
-        .setDescription(
-          `<@${interaction.user.id}> has submitted an application`
-        )
-        .addFields(
-          { name: 'Real Name', value: answers[0] },
-          { name: 'Real Age', value: answers[1] },
-          { name: 'Character Name', value: answers[2] },
-          { name: 'Roleplay Experience', value: answers[3] },
-          { name: 'Read Rules', value: answers[4] }
-        )
-        .setFooter({ text: `User ID: ${interaction.user.id}` })
-        .setColor('#FFD700');
-
       const actionRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('pending-whitelist')
@@ -100,8 +123,7 @@ module.exports = (client) => {
 
       const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
       await channel.send({
-        content: `<@&${WHITELIST_MANAGER_ROLE}>`,
-        embeds: [embed],
+        content: `Application from <@${interaction.user.id}>`,
         components: [actionRow],
       });
 
@@ -130,65 +152,31 @@ module.exports = (client) => {
 
     if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
       const reason = interaction.fields.getTextInputValue('reject-reason');
-      const targetMessage = await interaction.message.fetch();
+      const filePath = await createCustomImage(interaction.user.username, 'Rejected', reason);
 
-      const user = targetMessage.embeds[0].footer.text.match(/\d+/)[0];
-      const member = await interaction.guild.members.fetch(user);
       const logChannel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
-
-      const embed = new EmbedBuilder()
-        .setTitle('Whitelist Rejected')
-        .setDescription(
-          `User: <@${user}>\nWhitelist Manager: <@${interaction.user.id}>\nReason: ${reason}`
-        )
-        .setImage(REJECT_IMAGE)
-        .setColor('#FF4500');
-
-      await logChannel.send({ embeds: [embed] });
-
-      const updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
-        .setFooter({ text: 'Done' });
-
-      await targetMessage.edit({
-        embeds: [updatedEmbed],
-        components: [],
+      await logChannel.send({
+        content: `Rejection reason for <@${interaction.user.id}>`,
+        files: [filePath],
       });
 
       await interaction.reply({
-        content: `You rejected the whitelist application for <@${user}>.`,
+        content: 'The application has been rejected.',
         ephemeral: true,
       });
     }
 
     if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-      const targetMessage = await interaction.message.fetch();
+      const filePath = await createCustomImage(interaction.user.username, 'Pending');
 
-      const user = targetMessage.embeds[0].footer.text.match(/\d+/)[0];
-      const member = await interaction.guild.members.fetch(user);
       const logChannel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
-
-      const embed = new EmbedBuilder()
-        .setTitle('Whitelist Pending')
-        .setDescription(
-          `User: <@${user}>\nWhitelist Manager: <@${interaction.user.id}>`
-        )
-        .setImage(PENDING_IMAGE)
-        .setColor('#FFD700');
-
-      await logChannel.send({ embeds: [embed] });
-
-      await member.roles.add(PENDING_ROLE);
-
-      const updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
-        .setFooter({ text: 'Done' });
-
-      await targetMessage.edit({
-        embeds: [updatedEmbed],
-        components: [],
+      await logChannel.send({
+        content: `Pending status for <@${interaction.user.id}>`,
+        files: [filePath],
       });
 
       await interaction.reply({
-        content: `You marked the whitelist application for <@${user}> as pending.`,
+        content: 'The application has been marked as pending.',
         ephemeral: true,
       });
     }
