@@ -184,15 +184,10 @@ module.exports = (client) => {
             .setDisabled(true) // Disable the button
         );
 
-        // Update the message to disable buttons
+        // Update the message to disable buttons (no reply to the interaction anymore)
         await interaction.update({
           content: 'The application has been rejected.',
           components: [row], // Replace with disabled buttons
-        });
-
-        await interaction.reply({
-          content: 'The application has been rejected.',
-          ephemeral: true,
         });
       }
 
@@ -235,15 +230,10 @@ module.exports = (client) => {
             .setDisabled(true) // Disable the button
         );
 
-        // Update the message to disable buttons
+        // Update the message to disable buttons (no reply to the interaction anymore)
         await interaction.update({
           content: 'The application has been marked as pending.',
           components: [row], // Replace with disabled buttons
-        });
-
-        await interaction.reply({
-          content: 'The application has been marked as pending.',
-          ephemeral: true,
         });
       }
     } catch (error) {
