@@ -128,22 +128,22 @@ module.exports = (client) => {
         // Set custom font and style for the name
         ctx.font = '35px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(`${details.username.toUpperCase()}`, 550, 250);
+        ctx.fillText(details.username.toUpperCase(), 550, 250);
 
         // Set custom font and style for date and time
         ctx.font = '33px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(`${details.dateTime}`, 30, 365);
+        ctx.fillText(details.dateTime, 30, 365);
 
         // Set custom font and style for flight number
         ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(`Flight: ${details.flightNumber}`, 30, 300);
+        ctx.fillText(details.flightNumber, 30, 300);
 
         // Set custom font and style for seat
         ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(`Seat: ${details.seat}`, 30, 335);
+        ctx.fillText(details.seat, 30, 335);
 
         return canvas.toBuffer('image/png');
       }
