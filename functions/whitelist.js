@@ -2,9 +2,6 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -149,24 +146,6 @@ module.exports = (client) => {
       }
 
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('reject-reason-modal')
-          .setTitle('Rejection Reason');
-
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('reject-reason')
-              .setLabel('Reason for rejection')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
-
-        await interaction.showModal(modal);
-      }
-
-      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
-        const reason = interaction.fields.getTextInputValue('reject-reason');
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -184,7 +163,7 @@ module.exports = (client) => {
 
         const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
         await channel.send({
-          content: `<@${interaction.user.id}>\nReason: ${reason}`,
+          content: `<@${interaction.user.id}>`,
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
