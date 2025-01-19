@@ -2,9 +2,6 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder, // Remove if not needed
-  TextInputBuilder,
-  TextInputStyle,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -45,7 +42,76 @@ module.exports = (client) => {
   client.on('interactionCreate', async (interaction) => {
     try {
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        // Modal logic removed because you requested not to use it anymore
+        const modal = new ModalBuilder()
+          .setCustomId('whitelist-application')
+          .setTitle('Whitelist Application');
+
+        const questions = [
+          { id: 'real-name', label: 'Real Name' },
+          { id: 'real-age', label: 'Real Age' },
+          { id: 'character-name', label: 'Character Name' },
+          { id: 'roleplay-experience', label: 'Roleplay Experience' },
+          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+        ];
+
+        questions.forEach((q) => {
+          modal.addComponents(
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId(q.id)
+                .setLabel(q.label)
+                .setStyle(TextInputStyle.Short)
+            )
+          );
+        });
+
+        await interaction.showModal(modal);
+      }
+
+      if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
+        const answers = [
+          interaction.fields.getTextInputValue('real-name'),
+          interaction.fields.getTextInputValue('real-age'),
+          interaction.fields.getTextInputValue('character-name'),
+          interaction.fields.getTextInputValue('roleplay-experience'),
+          interaction.fields.getTextInputValue('read-rules'),
+        ];
+
+        const embed = {
+          title: 'Whitelist Application Submitted',
+          description: `<@${interaction.user.id}> has submitted an application.`,
+          fields: [
+            { name: 'Real Name', value: answers[0] },
+            { name: 'Real Age', value: answers[1] },
+            { name: 'Character Name', value: answers[2] },
+            { name: 'Roleplay Experience', value: answers[3] },
+            { name: 'Read Rules', value: answers[4] },
+          ],
+          footer: { text: `User ID: ${interaction.user.id}` },
+          color: 0xffd700,
+        };
+
+        const actionRow = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('pending-whitelist')
+            .setLabel('Pending')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId('reject-whitelist')
+            .setLabel('Reject')
+            .setStyle(ButtonStyle.Danger)
+        );
+
+        const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
+        const message = await channel.send({
+          content: `<@${interaction.user.id}>`,
+          embeds: [embed],
+          components: [actionRow],
+        });
+
+        // Store message ID for later update (in case buttons are pressed)
+        message.customId = message.id;
+
         await interaction.reply({
           content: 'Your application has been submitted.',
           ephemeral: true,
@@ -104,30 +170,18 @@ module.exports = (client) => {
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        // Modify the embed to show "Reviewed" and disable buttons
+        // Update the embed to show that the application is reviewed
         const message = await interaction.message.fetch();
         const embed = message.embeds[0];
-        embed.footer = { text: 'Reviewed' };
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId('pending-whitelist')
-            .setLabel('Pending')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true),
-          new ButtonBuilder()
-            .setCustomId('reject-whitelist')
-            .setLabel('Reject')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(true)
-        );
+        embed.footer.text = 'Reviewed';
 
         await message.edit({
           embeds: [embed],
-          components: [row],
+          components: [], // Remove the buttons
         });
 
         await interaction.reply({
-          content: 'The application has been rejected.',
+          content: 'The application has been rejected and reviewed.',
           ephemeral: true,
         });
       }
@@ -157,30 +211,18 @@ module.exports = (client) => {
         const member = await interaction.guild.members.fetch(interaction.user.id);
         await member.roles.add(PENDING_ROLE);
 
-        // Modify the embed to show "Reviewed" and disable buttons
+        // Update the embed to show that the application is reviewed
         const message = await interaction.message.fetch();
         const embed = message.embeds[0];
-        embed.footer = { text: 'Reviewed' };
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId('pending-whitelist')
-            .setLabel('Pending')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true),
-          new ButtonBuilder()
-            .setCustomId('reject-whitelist')
-            .setLabel('Reject')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(true)
-        );
+        embed.footer.text = 'Reviewed';
 
         await message.edit({
           embeds: [embed],
-          components: [row],
+          components: [], // Remove the buttons
         });
 
         await interaction.reply({
-          content: 'The application has been marked as pending.',
+          content: 'The application has been marked as pending and reviewed.',
           ephemeral: true,
         });
       }
