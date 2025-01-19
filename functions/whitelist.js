@@ -131,7 +131,7 @@ module.exports = (client) => {
         // Set custom font and style for the name
         ctx.font = '25px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.username.toUpperCase(), 350, 160);
+        ctx.fillText(details.username.toUpperCase(), 350, 162);
 
         // Set custom font and style for date and time
         ctx.font = '23px SkCustom';
@@ -141,7 +141,7 @@ module.exports = (client) => {
         // Set custom font and style for flight number
         ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.flightNumber, 30, 300);
+        ctx.fillText(details.flightNumber, 350, 175);
 
         // Set custom font and style for seat
         ctx.font = '30px SkCustom';
