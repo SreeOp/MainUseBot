@@ -57,7 +57,9 @@ module.exports = (client) => {
           );
         });
 
+        // Show the modal here
         await interaction.showModal(modal);
+        return; // Early exit to prevent further execution after showing the modal
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
@@ -101,6 +103,7 @@ module.exports = (client) => {
           components: [actionRow],
         });
 
+        // Respond to the interaction
         await interaction.reply({
           content: 'Your application has been submitted.',
           ephemeral: true,
@@ -110,8 +113,8 @@ module.exports = (client) => {
       if (interaction.isButton() && ['reject-whitelist', 'pending-whitelist'].includes(interaction.customId)) {
         const message = await interaction.message.fetch();
 
-        // Acknowledge the interaction and defer update
-        await interaction.deferUpdate();
+        // Defer the update to avoid interaction already acknowledged error
+        await interaction.deferUpdate(); // Acknowledge interaction before doing anything else
 
         if (interaction.customId === 'reject-whitelist') {
           const modal = new ModalBuilder()
@@ -144,7 +147,6 @@ module.exports = (client) => {
             seat,
           };
 
-          // Send pending message with generated image
           const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
           const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
           await channel.send({
@@ -155,15 +157,15 @@ module.exports = (client) => {
           const member = await interaction.guild.members.fetch(interaction.user.id);
           await member.roles.add(PENDING_ROLE);
 
-          await interaction.reply({
-            content: 'The application has been marked as pending.',
-            ephemeral: true,
-          });
-
           // Update the embed footer and remove buttons
           const embed = message.embeds[0];
           embed.setFooter({ text: 'NRP Viewed' });
           await message.edit({ embeds: [embed], components: [] });
+
+          await interaction.reply({
+            content: 'The application has been marked as pending.',
+            ephemeral: true,
+          });
         }
       }
 
@@ -190,16 +192,16 @@ module.exports = (client) => {
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        await interaction.reply({
-          content: 'The application has been rejected.',
-          ephemeral: true,
-        });
-
         // Update the embed footer and remove buttons
         const message = await interaction.message.fetch();
         const embed = message.embeds[0];
         embed.setFooter({ text: 'NRP Viewed' });
         await message.edit({ embeds: [embed], components: [] });
+
+        await interaction.reply({
+          content: 'The application has been rejected.',
+          ephemeral: true,
+        });
       }
     } catch (error) {
       console.error('An error occurred:', error);
