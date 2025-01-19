@@ -1,20 +1,10 @@
-const {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-} = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
 const moment = require('moment-timezone');
 
 // Register the custom font
-GlobalFonts.registerFromPath(
-  path.join(__dirname, '..', '..', 'fonts', 'A25-SQUANOVA.ttf'),
-  'SkCustom'
-);
+GlobalFonts.registerFromPath(path.join(__dirname, '..', '..', 'fonts', 'A25-SQUANOVA.ttf'), 'SkCustom');
 
 module.exports = (client) => {
   const APPLICATION_CHANNEL = '1255162116126539786';
@@ -117,34 +107,11 @@ module.exports = (client) => {
         });
       }
 
-      async function generateTicketImage(details, imageURL) {
-        const canvas = createCanvas(1024, 331);
-        const ctx = canvas.getContext('2d');
-        const background = await loadImage(imageURL);
-
-        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-        ctx.font = '35px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.username.toUpperCase(), 550, 250);
-
-        ctx.font = '33px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.dateTime, 30, 365);
-
-        ctx.font = '30px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.flightNumber, 30, 300);
-
-        ctx.font = '30px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.seat, 30, 335);
-
-        return canvas.toBuffer('image/png');
-      }
-
       if (interaction.isButton() && ['reject-whitelist', 'pending-whitelist'].includes(interaction.customId)) {
         const message = await interaction.message.fetch();
+
+        // Acknowledge the interaction and defer update
+        await interaction.deferUpdate();
 
         if (interaction.customId === 'reject-whitelist') {
           const modal = new ModalBuilder()
@@ -177,6 +144,7 @@ module.exports = (client) => {
             seat,
           };
 
+          // Send pending message with generated image
           const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
           const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
           await channel.send({
