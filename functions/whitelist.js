@@ -17,7 +17,6 @@ GlobalFonts.registerFromPath(
 );
 
 module.exports = (client) => {
-  // Configuration
   const APPLICATION_CHANNEL = '1255162116126539786';
   const PENDING_CHANNEL = '1313134410282962996';
   const REJECT_CHANNEL = '1313134410282962996';
@@ -125,22 +124,18 @@ module.exports = (client) => {
 
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-        // Set custom font and style for the name
         ctx.font = '35px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.username.toUpperCase(), 550, 250);
 
-        // Set custom font and style for date and time
         ctx.font = '33px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.dateTime, 30, 365);
 
-        // Set custom font and style for flight number
         ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.flightNumber, 30, 300);
 
-        // Set custom font and style for seat
         ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.seat, 30, 335);
@@ -148,21 +143,60 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('reject-reason-modal')
-          .setTitle('Rejection Reason');
+      if (interaction.isButton() && ['reject-whitelist', 'pending-whitelist'].includes(interaction.customId)) {
+        const message = await interaction.message.fetch();
 
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('reject-reason')
-              .setLabel('Reason for rejection')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
+        if (interaction.customId === 'reject-whitelist') {
+          const modal = new ModalBuilder()
+            .setCustomId('reject-reason-modal')
+            .setTitle('Rejection Reason');
 
-        await interaction.showModal(modal);
+          modal.addComponents(
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId('reject-reason')
+                .setLabel('Reason for rejection')
+                .setStyle(TextInputStyle.Paragraph)
+            )
+          );
+
+          await interaction.showModal(modal);
+        }
+
+        if (interaction.customId === 'pending-whitelist') {
+          const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+          const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+          const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+          const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A');
+
+          const details = {
+            username: interaction.user.username,
+            flightNumber,
+            gate,
+            dateTime,
+            seat,
+          };
+
+          const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
+          const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+          await channel.send({
+            content: `<@${interaction.user.id}>`,
+            files: [{ attachment: imageBuffer, name: 'pending.png' }],
+          });
+
+          const member = await interaction.guild.members.fetch(interaction.user.id);
+          await member.roles.add(PENDING_ROLE);
+
+          await interaction.reply({
+            content: 'The application has been marked as pending.',
+            ephemeral: true,
+          });
+
+          // Update the embed footer and remove buttons
+          const embed = message.embeds[0];
+          embed.setFooter({ text: 'NRP Viewed' });
+          await message.edit({ embeds: [embed], components: [] });
+        }
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
@@ -170,7 +204,7 @@ module.exports = (client) => {
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A');
 
         const details = {
           username: interaction.user.username,
@@ -192,37 +226,12 @@ module.exports = (client) => {
           content: 'The application has been rejected.',
           ephemeral: true,
         });
-      }
 
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
-        const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
-        };
-
-        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
-
-        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
-        await channel.send({
-          content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: 'pending.png' }],
-        });
-
-        const member = await interaction.guild.members.fetch(interaction.user.id);
-        await member.roles.add(PENDING_ROLE);
-
-        await interaction.reply({
-          content: 'The application has been marked as pending.',
-          ephemeral: true,
-        });
+        // Update the embed footer and remove buttons
+        const message = await interaction.message.fetch();
+        const embed = message.embeds[0];
+        embed.setFooter({ text: 'NRP Viewed' });
+        await message.edit({ embeds: [embed], components: [] });
       }
     } catch (error) {
       console.error('An error occurred:', error);
