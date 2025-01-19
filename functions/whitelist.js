@@ -129,9 +129,9 @@ module.exports = (client) => {
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
         // Set custom font and style for the name
-        ctx.font = '35px SkCustom';
+        ctx.font = '25px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.username.toUpperCase(), 350, 200);
+        ctx.fillText(details.username.toUpperCase(), 350, 210);
 
         // Set custom font and style for date and time
         ctx.font = '23px SkCustom';
