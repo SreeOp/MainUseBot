@@ -2,6 +2,9 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -15,10 +18,10 @@ GlobalFonts.registerFromPath(
 
 module.exports = (client) => {
   // Configuration
-  const APPLICATION_CHANNEL = '1255162116126539786';
-  const PENDING_CHANNEL = '1313134410282962996';
-  const REJECT_CHANNEL = '1313134410282962996';
-  const PENDING_ROLE = '1253347271718735882';
+  const APPLICATION_CHANNEL = 'reviewchannelid';
+  const PENDING_CHANNEL = 'pending';
+  const REJECT_CHANNEL = 'reject';
+  const PENDING_ROLE = 'pendingROLE';
   const PENDING_IMAGE_URL = 'https://i.ibb.co/zm3LBZw/pending.png';
   const REJECT_IMAGE_URL = 'https://i.ibb.co/M6WWZ9b/reject.png';
 
@@ -103,14 +106,11 @@ module.exports = (client) => {
         );
 
         const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
-        const message = await channel.send({
+        await channel.send({
           content: `<@${interaction.user.id}>`,
           embeds: [embed],
           components: [actionRow],
         });
-
-        // Store message ID for later update (in case buttons are pressed)
-        message.customId = message.id;
 
         await interaction.reply({
           content: 'Your application has been submitted.',
@@ -149,6 +149,24 @@ module.exports = (client) => {
       }
 
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        const modal = new ModalBuilder()
+          .setCustomId('reject-reason-modal')
+          .setTitle('Rejection Reason');
+
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('reject-reason')
+              .setLabel('Reason for rejection')
+              .setStyle(TextInputStyle.Paragraph)
+          )
+        );
+
+        await interaction.showModal(modal);
+      }
+
+      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
+        const reason = interaction.fields.getTextInputValue('reject-reason');
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -166,22 +184,12 @@ module.exports = (client) => {
 
         const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
         await channel.send({
-          content: `<@${interaction.user.id}>`,
+          content: `<@${interaction.user.id}>\nReason: ${reason}`,
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        // Update the embed to show that the application is reviewed
-        const message = await interaction.message.fetch();
-        const embed = message.embeds[0];
-        embed.footer.text = 'Reviewed';
-
-        await message.edit({
-          embeds: [embed],
-          components: [], // Remove the buttons
-        });
-
         await interaction.reply({
-          content: 'The application has been rejected and reviewed.',
+          content: 'The application has been rejected.',
           ephemeral: true,
         });
       }
@@ -211,18 +219,8 @@ module.exports = (client) => {
         const member = await interaction.guild.members.fetch(interaction.user.id);
         await member.roles.add(PENDING_ROLE);
 
-        // Update the embed to show that the application is reviewed
-        const message = await interaction.message.fetch();
-        const embed = message.embeds[0];
-        embed.footer.text = 'Reviewed';
-
-        await message.edit({
-          embeds: [embed],
-          components: [], // Remove the buttons
-        });
-
         await interaction.reply({
-          content: 'The application has been marked as pending and reviewed.',
+          content: 'The application has been marked as pending.',
           ephemeral: true,
         });
       }
