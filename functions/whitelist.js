@@ -139,9 +139,9 @@ module.exports = (client) => {
         ctx.fillText(details.dateTime, 550, 250);
 
         // Set custom font and style for flight number
-        ctx.font = '23px SkCustom';
+        ctx.font = '20px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.flightNumber, 70, 180);
+        ctx.fillText(details.flightNumber, 50, 180);
 
         // Set custom font and style for seat
         ctx.font = '24px SkCustom';
