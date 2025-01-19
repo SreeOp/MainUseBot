@@ -131,10 +131,10 @@ module.exports = (client) => {
         // Set custom font and style for the name
         ctx.font = '35px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.username.toUpperCase(), 540, 260);
+        ctx.fillText(details.username.toUpperCase(), 520, 280);
 
         // Set custom font and style for date and time
-        ctx.font = '33px SkCustom';
+        ctx.font = '23px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.dateTime, 550, 250);
 
