@@ -141,12 +141,12 @@ module.exports = (client) => {
         // Set custom font and style for flight number
         ctx.font = '23px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.flightNumber, 330, 180);
+        ctx.fillText(details.flightNumber, 250, 180);
 
         // Set custom font and style for seat
         ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.seat, 30, 335);
+        ctx.fillText(details.seat, 550, 200);
 
         return canvas.toBuffer('image/png');
       }
