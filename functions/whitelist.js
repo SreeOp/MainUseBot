@@ -44,33 +44,40 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
+      // Handle apply-whitelist button click
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('whitelist-application')
-          .setTitle('Whitelist Application');
+        // Check if the interaction has already been acknowledged
+        if (!interaction.replied && !interaction.deferred) {
+          const modal = new ModalBuilder()
+            .setCustomId('whitelist-application')
+            .setTitle('Whitelist Application');
 
-        const questions = [
-          { id: 'real-name', label: 'Real Name' },
-          { id: 'real-age', label: 'Real Age' },
-          { id: 'character-name', label: 'Character Name' },
-          { id: 'roleplay-experience', label: 'Roleplay Experience' },
-          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
-        ];
+          const questions = [
+            { id: 'real-name', label: 'Real Name' },
+            { id: 'real-age', label: 'Real Age' },
+            { id: 'character-name', label: 'Character Name' },
+            { id: 'roleplay-experience', label: 'Roleplay Experience' },
+            { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+          ];
 
-        questions.forEach((q) => {
-          modal.addComponents(
-            new ActionRowBuilder().addComponents(
-              new TextInputBuilder()
-                .setCustomId(q.id)
-                .setLabel(q.label)
-                .setStyle(TextInputStyle.Short)
-            )
-          );
-        });
+          questions.forEach((q) => {
+            modal.addComponents(
+              new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                  .setCustomId(q.id)
+                  .setLabel(q.label)
+                  .setStyle(TextInputStyle.Short)
+              )
+            );
+          });
 
-        await interaction.showModal(modal);
+          await interaction.showModal(modal);
+        } else {
+          console.log('Interaction has already been acknowledged.');
+        }
       }
 
+      // Handle modal submission
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
@@ -115,10 +122,13 @@ module.exports = (client) => {
         // Store message ID for later update (in case buttons are pressed)
         message.customId = message.id;
 
-        await interaction.reply({
-          content: 'Your application has been submitted.',
-          ephemeral: true,
-        });
+        // Avoid replying multiple times if already acknowledged
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'Your application has been submitted.',
+            ephemeral: true,
+          });
+        }
       }
 
       async function generateTicketImage(details, imageURL) {
@@ -156,6 +166,7 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
+      // Handle reject-whitelist button click
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
@@ -188,12 +199,16 @@ module.exports = (client) => {
           components: [], // Remove the buttons
         });
 
-        await interaction.reply({
-          content: 'The application has been rejected and reviewed.',
-          ephemeral: true,
-        });
+        // Avoid replying multiple times if already acknowledged
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'The application has been rejected and reviewed.',
+            ephemeral: true,
+          });
+        }
       }
 
+      // Handle pending-whitelist button click
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
@@ -229,10 +244,13 @@ module.exports = (client) => {
           components: [], // Remove the buttons
         });
 
-        await interaction.reply({
-          content: 'The application has been marked as pending and reviewed.',
-          ephemeral: true,
-        });
+        // Avoid replying multiple times if already acknowledged
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'The application has been marked as pending and reviewed.',
+            ephemeral: true,
+          });
+        }
       }
     } catch (error) {
       console.error('An error occurred:', error);
