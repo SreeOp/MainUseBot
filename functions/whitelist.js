@@ -6,10 +6,18 @@ const {
   TextInputBuilder,
   TextInputStyle,
 } = require('discord.js');
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
+const path = require('path');
 const moment = require('moment-timezone');
 
+// Register the custom font
+GlobalFonts.registerFromPath(
+  path.join(__dirname, '..', '..', 'fonts', 'A25-SQUANOVA.ttf'),
+  'SkCustom'
+);
+
 module.exports = (client) => {
+  // Configuration
   const APPLICATION_CHANNEL = '1255162116126539786';
   const PENDING_CHANNEL = '1313134410282962996';
   const REJECT_CHANNEL = '1313134410282962996';
@@ -36,7 +44,6 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
-      // Handling Apply button interaction
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
@@ -64,7 +71,6 @@ module.exports = (client) => {
         await interaction.showModal(modal);
       }
 
-      // Handling the modal submission for whitelist application
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
@@ -112,7 +118,36 @@ module.exports = (client) => {
         });
       }
 
-      // Handle REJECT Button interaction - show rejection modal
+      async function generateTicketImage(details, imageURL) {
+        const canvas = createCanvas(1024, 331);
+        const ctx = canvas.getContext('2d');
+        const background = await loadImage(imageURL);
+
+        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+        // Set custom font and style for the name
+        ctx.font = '35px SkCustom';
+        ctx.fillStyle = '#21130d';
+        ctx.fillText(`${details.username.toUpperCase()}`, 550, 250);
+
+        // Set custom font and style for date and time
+        ctx.font = '33px SkCustom';
+        ctx.fillStyle = '#21130d';
+        ctx.fillText(`${details.dateTime}`, 30, 365);
+
+        // Set custom font and style for flight number
+        ctx.font = '30px SkCustom';
+        ctx.fillStyle = '#21130d';
+        ctx.fillText(`Flight: ${details.flightNumber}`, 30, 300);
+
+        // Set custom font and style for seat
+        ctx.font = '30px SkCustom';
+        ctx.fillStyle = '#21130d';
+        ctx.fillText(`Seat: ${details.seat}`, 30, 335);
+
+        return canvas.toBuffer('image/png');
+      }
+
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
         const modal = new ModalBuilder()
           .setCustomId('reject-reason-modal')
@@ -130,7 +165,6 @@ module.exports = (client) => {
         await interaction.showModal(modal);
       }
 
-      // Handle submission of rejection reason from modal
       if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
         const reason = interaction.fields.getTextInputValue('reject-reason');
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
@@ -148,55 +182,18 @@ module.exports = (client) => {
 
         const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
 
-        // Send the rejection message with the image and reason
         const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
         await channel.send({
-          content: `<@${interaction.user.id}> Reason: ${reason}`,
+          content: `<@${interaction.user.id}>\nReason: ${reason}`,
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        // Disable the buttons after rejection
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId('pending-whitelist')
-            .setLabel('Pending')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true), // Disable the button
-          new ButtonBuilder()
-            .setCustomId('reject-whitelist')
-            .setLabel('Reject')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(true) // Disable the button
-        );
-
-        // Update the original message to disable buttons (no reply to the interaction anymore)
-        await interaction.update({
+        await interaction.reply({
           content: 'The application has been rejected.',
-          components: [row], // Replace with disabled buttons
+          ephemeral: true,
         });
       }
 
-      // Helper function to generate the rejection ticket image
-      async function generateTicketImage(details, imageURL) {
-        const canvas = createCanvas(1024, 331);
-        const ctx = canvas.getContext('2d');
-        const background = await loadImage(imageURL);
-
-        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-        ctx.font = 'bold 28px Arial';
-        ctx.fillStyle = '#FFFFFF';
-
-        ctx.fillText(details.username, 100, 100);
-        ctx.fillText(details.flightNumber, 100, 150);
-        ctx.fillText(details.gate, 100, 200);
-        ctx.fillText(details.dateTime, 100, 250);
-        ctx.fillText(details.seat, 100, 300);
-
-        return canvas.toBuffer('image/png');
-      }
-
-      // Handle the PENDING button interaction (same as before)
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
@@ -222,24 +219,9 @@ module.exports = (client) => {
         const member = await interaction.guild.members.fetch(interaction.user.id);
         await member.roles.add(PENDING_ROLE);
 
-        // Disable the buttons after being clicked
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId('pending-whitelist')
-            .setLabel('Pending')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true), // Disable the button
-          new ButtonBuilder()
-            .setCustomId('reject-whitelist')
-            .setLabel('Reject')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(true) // Disable the button
-        );
-
-        // Update the message to disable buttons (no reply to the interaction anymore)
-        await interaction.update({
+        await interaction.reply({
           content: 'The application has been marked as pending.',
-          components: [row], // Replace with disabled buttons
+          ephemeral: true,
         });
       }
     } catch (error) {
