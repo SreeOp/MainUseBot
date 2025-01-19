@@ -57,31 +57,45 @@ client.once('ready', () => {
   cfxStatus(client); 
 });
 
+// Function to handle interactions (buttons, modals, etc.)
+async function handleInteraction(interaction) {
+  if (interaction.isButton()) {
+    // Handle button interactions
+    if (interaction.customId === 'apply-whitelist') {
+      // Your existing button logic for applying for whitelist
+      await interaction.reply('You clicked apply-whitelist!');
+    }
+    else if (interaction.customId === 'reject-whitelist') {
+      // Handle the rejection button logic
+      await interaction.reply('You clicked reject-whitelist!');
+    }
+    // Add more button handling cases as needed
+  }
+  
+  else if (interaction.isModalSubmit()) {
+    // Handle modal submissions (e.g., whitelist application)
+    if (interaction.customId === 'whitelist-application') {
+      // Process the modal inputs and send response
+      const name = interaction.fields.getTextInputValue('real-name');
+      await interaction.reply(`Application submitted with name: ${name}`);
+    }
+  }
+  else {
+    await interaction.reply({ content: 'Unknown interaction type.', ephemeral: true });
+  }
+}
+
 // Interaction create event
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-
-  if (!command) return;
-
-  // Check if ALLOWED_ROLES is defined
-  const allowedRoles = process.env.ALLOWED_ROLES ? process.env.ALLOWED_ROLES.split(',') : [];
-  const memberRoles = interaction.member.roles.cache;
-  const hasPermission = allowedRoles.some(role => memberRoles.has(role));
-
-  if (!hasPermission) {
-    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-  }
-
   try {
-    await command.execute(interaction, client); // Pass the client to the command
+    // Call the function to handle the interaction
+    await handleInteraction(interaction);
   } catch (error) {
     console.error(error);
     if (!interaction.replied) {
-      await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+      await interaction.reply({ content: 'There was an error handling the interaction.', ephemeral: true });
     } else {
-      await interaction.followUp({ content: 'There was an error executing that command!', ephemeral: true });
+      await interaction.followUp({ content: 'There was an error handling the interaction.', ephemeral: true });
     }
   }
 });
