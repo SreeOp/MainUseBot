@@ -5,6 +5,8 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  SelectMenuBuilder,  // Import SelectMenuBuilder
+  ComponentType,  // To check the type of component
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -95,14 +97,21 @@ module.exports = (client) => {
         };
 
         const actionRow = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId('pending-whitelist')
-            .setLabel('Pending')
-            .setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder()
-            .setCustomId('reject-whitelist')
-            .setLabel('Reject')
-            .setStyle(ButtonStyle.Danger)
+          new SelectMenuBuilder()
+            .setCustomId('whitelist-action')
+            .setPlaceholder('Select an action')
+            .addOptions(
+              {
+                label: 'Mark as Pending',
+                value: 'pending',
+                description: 'Mark the application as pending',
+              },
+              {
+                label: 'Reject Application',
+                value: 'reject',
+                description: 'Reject the application',
+              }
+            )
         );
 
         const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
@@ -150,8 +159,10 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
-      if (interaction.isButton() && ['reject-whitelist', 'pending-whitelist'].includes(interaction.customId)) {
-        if (!interaction.replied && !interaction.deferred) {
+      if (interaction.isSelectMenu() && interaction.customId === 'whitelist-action') {
+        const selectedValue = interaction.values[0];
+        
+        if (selectedValue === 'reject' || selectedValue === 'pending') {
           const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
           const gate = `0${Math.floor(1 + Math.random() * 3)}`;
           const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -165,15 +176,15 @@ module.exports = (client) => {
             seat,
           };
 
-          const imageBuffer = await generateTicketImage(details, interaction.customId === 'reject-whitelist' ? REJECT_IMAGE_URL : PENDING_IMAGE_URL);
+          const imageBuffer = await generateTicketImage(details, selectedValue === 'reject' ? REJECT_IMAGE_URL : PENDING_IMAGE_URL);
 
-          const channel = interaction.guild.channels.cache.get(interaction.customId === 'reject-whitelist' ? REJECT_CHANNEL : PENDING_CHANNEL);
+          const channel = interaction.guild.channels.cache.get(selectedValue === 'reject' ? REJECT_CHANNEL : PENDING_CHANNEL);
           await channel.send({
             content: `<@${interaction.user.id}>`,
-            files: [{ attachment: imageBuffer, name: interaction.customId === 'reject-whitelist' ? 'rejected.png' : 'pending.png' }],
+            files: [{ attachment: imageBuffer, name: selectedValue === 'reject' ? 'rejected.png' : 'pending.png' }],
           });
 
-          if (interaction.customId === 'pending-whitelist') {
+          if (selectedValue === 'pending') {
             const member = await interaction.guild.members.fetch(interaction.user.id);
             await member.roles.add(PENDING_ROLE);
           }
@@ -188,7 +199,7 @@ module.exports = (client) => {
           });
 
           await interaction.reply({
-            content: `The application has been ${interaction.customId === 'reject-whitelist' ? 'rejected' : 'marked as pending'} and reviewed.`,
+            content: `The application has been ${selectedValue === 'reject' ? 'rejected' : 'marked as pending'} and reviewed.`,
             ephemeral: true,
           });
         }
