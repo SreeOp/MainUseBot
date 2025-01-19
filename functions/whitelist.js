@@ -146,7 +146,7 @@ module.exports = (client) => {
         // Set custom font and style for seat
         ctx.font = '24px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.seat, 800, 200);
+        ctx.fillText(details.seat, 850, 200);
 
         // Set custom font and style for gate
         ctx.font = '24px SkCustom';
