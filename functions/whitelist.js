@@ -72,7 +72,10 @@ module.exports = (client) => {
             );
           });
 
-          await interaction.showModal(modal);
+          // Only show the modal if the interaction has not been responded to already
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.showModal(modal);
+          }
         }
       }
 
