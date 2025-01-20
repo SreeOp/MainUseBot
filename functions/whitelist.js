@@ -46,8 +46,9 @@ module.exports = (client) => {
     try {
       // Handle apply-whitelist button click
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        // Check if the interaction has already been acknowledged
         if (!interaction.replied && !interaction.deferred) {
+          await interaction.deferReply({ ephemeral: true });
+
           const modal = new ModalBuilder()
             .setCustomId('whitelist-application')
             .setTitle('Whitelist Application');
@@ -79,6 +80,8 @@ module.exports = (client) => {
 
       // Handle modal submission
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
+        await interaction.deferReply({ ephemeral: true });
+
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
           interaction.fields.getTextInputValue('real-age'),
@@ -122,13 +125,10 @@ module.exports = (client) => {
         // Store message ID for later update (in case buttons are pressed)
         message.customId = message.id;
 
-        // Avoid replying multiple times if already acknowledged
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({
-            content: 'Your application has been submitted.',
-            ephemeral: true,
-          });
-        }
+        await interaction.editReply({
+          content: 'Your application has been submitted.',
+          components: [],
+        });
       }
 
       async function generateTicketImage(details, imageURL) {
@@ -168,6 +168,8 @@ module.exports = (client) => {
 
       // Handle reject-whitelist button click
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        await interaction.deferReply({ ephemeral: true });
+
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -199,17 +201,16 @@ module.exports = (client) => {
           components: [], // Remove the buttons
         });
 
-        // Avoid replying multiple times if already acknowledged
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({
-            content: 'The application has been rejected and reviewed.',
-            ephemeral: true,
-          });
-        }
+        await interaction.editReply({
+          content: 'The application has been rejected and reviewed.',
+          components: [],
+        });
       }
 
       // Handle pending-whitelist button click
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+        await interaction.deferReply({ ephemeral: true });
+
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -244,13 +245,10 @@ module.exports = (client) => {
           components: [], // Remove the buttons
         });
 
-        // Avoid replying multiple times if already acknowledged
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({
-            content: 'The application has been marked as pending and reviewed.',
-            ephemeral: true,
-          });
-        }
+        await interaction.editReply({
+          content: 'The application has been marked as pending and reviewed.',
+          components: [],
+        });
       }
     } catch (error) {
       console.error('An error occurred:', error);
