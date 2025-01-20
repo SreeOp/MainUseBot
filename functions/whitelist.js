@@ -2,9 +2,9 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder,  // Added ModalBuilder import
-  TextInputBuilder,  // Added TextInputBuilder import
-  TextInputStyle,  // Added TextInputStyle import
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -73,13 +73,14 @@ module.exports = (client) => {
           });
 
           await interaction.showModal(modal);
-        } else {
-          console.log('Interaction has already been acknowledged.');
         }
       }
 
       // Handle modal submission
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
+        // Prevent further acknowledgement if already deferred or replied
+        if (interaction.replied || interaction.deferred) return;
+
         await interaction.deferReply({ ephemeral: true });
 
         const answers = [
@@ -168,6 +169,8 @@ module.exports = (client) => {
 
       // Handle reject-whitelist button click
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        if (interaction.replied || interaction.deferred) return;
+
         await interaction.deferReply({ ephemeral: true });
 
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
@@ -209,6 +212,8 @@ module.exports = (client) => {
 
       // Handle pending-whitelist button click
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+        if (interaction.replied || interaction.deferred) return;
+
         await interaction.deferReply({ ephemeral: true });
 
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
