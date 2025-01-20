@@ -2,9 +2,9 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder,  // Added ModalBuilder import
-  TextInputBuilder,  // Added TextInputBuilder import
-  TextInputStyle,  // Added TextInputStyle import
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -44,6 +44,7 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
+      // Handle Apply button press
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
@@ -71,6 +72,7 @@ module.exports = (client) => {
         await interaction.showModal(modal);
       }
 
+      // Handle modal submission
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
@@ -115,12 +117,21 @@ module.exports = (client) => {
         // Store message ID for later update (in case buttons are pressed)
         message.customId = message.id;
 
-        await interaction.reply({
-          content: 'Your application has been submitted.',
-          ephemeral: true,
-        });
+        // Acknowledge the interaction
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({
+            content: 'Your application has been submitted.',
+            ephemeral: true,
+          });
+        } else {
+          await interaction.reply({
+            content: 'Your application has been submitted.',
+            ephemeral: true,
+          });
+        }
       }
 
+      // Function to generate ticket image
       async function generateTicketImage(details, imageURL) {
         const canvas = createCanvas(1024, 331);
         const ctx = canvas.getContext('2d');
@@ -156,7 +167,9 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
+      // Reject whitelist application
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        if (!interaction.deferred) await interaction.deferReply(); // Defer reply to avoid timeouts
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -188,13 +201,15 @@ module.exports = (client) => {
           components: [], // Remove the buttons
         });
 
-        await interaction.reply({
+        // Respond to the interaction
+        await interaction.editReply({
           content: 'The application has been rejected and reviewed.',
-          ephemeral: true,
         });
       }
 
+      // Set application as pending
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+        if (!interaction.deferred) await interaction.deferReply(); // Defer reply to avoid timeouts
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -229,17 +244,25 @@ module.exports = (client) => {
           components: [], // Remove the buttons
         });
 
-        await interaction.reply({
+        // Respond to the interaction
+        await interaction.editReply({
           content: 'The application has been marked as pending and reviewed.',
-          ephemeral: true,
         });
       }
     } catch (error) {
       console.error('An error occurred:', error);
+
+      // Handle error properly by checking if interaction was acknowledged
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'An error occurred. Please try again later.', ephemeral: true });
+        await interaction.followUp({
+          content: 'An error occurred. Please try again later.',
+          ephemeral: true,
+        });
       } else {
-        await interaction.reply({ content: 'An error occurred. Please try again later.', ephemeral: true });
+        await interaction.reply({
+          content: 'An error occurred. Please try again later.',
+          ephemeral: true,
+        });
       }
     }
   });
