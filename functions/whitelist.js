@@ -114,119 +114,21 @@ module.exports = (client) => {
           components: [actionRow],
         });
 
+        // Store message ID for later update (in case buttons are pressed)
+        message.customId = message.id;
+
         // Acknowledge the interaction
-        await interaction.reply({
-          content: 'Your application has been submitted.',
-          ephemeral: true,
-        });
-      }
-
-      // Handle rejection reason modal
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const modal = new ModalBuilder()
-          .setCustomId('reject-reason-modal')
-          .setTitle('Rejection Reason');
-
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('reject-reason')
-              .setLabel('Reason for rejection')
-              .setStyle(TextInputStyle.Paragraph)
-          )
-        );
-
-        await interaction.showModal(modal);
-      }
-
-      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
-        const reason = interaction.fields.getTextInputValue('reject-reason');
-        const userId = interaction.message.embeds[0]?.footer?.text.split(' ')[2]; // Extract user ID
-        const user = await interaction.guild.members.fetch(userId);
-
-        if (user) {
-          await user.send(`❌ Your whitelist application has been rejected.\n\n**Reason**: \`${reason}\``);
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({
+            content: 'Your application has been submitted.',
+            ephemeral: true,
+          });
+        } else {
+          await interaction.reply({
+            content: 'Your application has been submitted.',
+            ephemeral: true,
+          });
         }
-
-        await interaction.reply({
-          content: `You rejected the whitelist application for <@${userId}>.`,
-          ephemeral: true,
-        });
-      }
-
-      // Handle pending button press
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const userId = interaction.message.embeds[0]?.footer?.text.split(' ')[2]; // Extract user ID
-        const user = await interaction.guild.members.fetch(userId);
-
-        if (user) {
-          await user.send(`🔁 Your whitelist application has been put on pending.`);
-        }
-
-        await interaction.reply({
-          content: `You marked the whitelist application for <@${userId}> as pending.`,
-          ephemeral: true,
-        });
-      }
-
-      // Reject whitelist application
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
-        const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
-        };
-
-        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
-
-        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
-        await channel.send({
-          content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
-        });
-
-        // Update the embed to show that the application is reviewed
-        const message = await interaction.message.fetch();
-        const embed = message.embeds[0];
-        embed.footer.text = 'Reviewed';
-
-        await message.edit({
-          embeds: [embed],
-          components: [], // Remove the buttons
-        });
-
-        // Send a rejection DM to the user
-        const userId = interaction.message.embeds[0]?.footer?.text.split(' ')[2]; // Extract user ID
-        const user = await interaction.guild.members.fetch(userId);
-        if (user) {
-          await user.send(`❌ Your whitelist application has been rejected.\n\n**Reason**: \`${reason}\``);
-        }
-
-        await interaction.editReply({
-          content: 'The application has been rejected and reviewed.',
-        });
-      }
-
-      // Set application as pending
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const userId = interaction.message.embeds[0]?.footer?.text.split(' ')[2]; // Extract user ID
-        const user = await interaction.guild.members.fetch(userId);
-
-        if (user) {
-          await user.send(`🔁 Your whitelist application has been put on pending.`);
-        }
-
-        await interaction.reply({
-          content: `You marked the whitelist application for <@${userId}> as pending.`,
-          ephemeral: true,
-        });
       }
 
       // Function to generate ticket image
@@ -265,8 +167,120 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
+      // Reject whitelist application
+      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+        if (!interaction.deferred) await interaction.deferReply(); // Defer reply to avoid timeouts
+        const modal = new ModalBuilder()
+          .setCustomId('reject-reason-modal')
+          .setTitle('Rejection Reason');
+
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('reject-reason')
+              .setLabel('Reason for rejection')
+              .setStyle(TextInputStyle.Paragraph)
+          )
+        );
+
+        await interaction.showModal(modal);
+      }
+
+      // Handle modal submission for rejection reason
+      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
+        const reason = interaction.fields.getTextInputValue('reject-reason');
+        const userId = interaction.message.embeds[0]?.footer?.text.split(' ')[2]; // Extract user ID from the embed footer
+        const user = await interaction.guild.members.fetch(userId);
+
+        if (user) {
+          await user.send({
+            content: `❌ Your whitelist application has been rejected.\n\n**Reason**: \`${reason}\``,
+          });
+        }
+
+        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+
+        const details = {
+          username: interaction.user.username,
+          flightNumber,
+          gate,
+          dateTime,
+          seat,
+        };
+
+        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
+
+        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
+        await channel.send({
+          content: `<@${interaction.user.id}>`,
+          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
+        });
+
+        // Update the embed to show that the application is reviewed
+        const message = await interaction.message.fetch();
+        const embed = message.embeds[0];
+        embed.footer.text = 'Reviewed';
+
+        await message.edit({
+          embeds: [embed],
+          components: [], // Remove the buttons
+        });
+
+        // Respond to the interaction
+        await interaction.editReply({
+          content: 'The application has been rejected and reviewed.',
+        });
+      }
+
+      // Set application as pending
+      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+        if (!interaction.deferred) await interaction.deferReply(); // Defer reply to avoid timeouts
+        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+
+        const details = {
+          username: interaction.user.username,
+          flightNumber,
+          gate,
+          dateTime,
+          seat,
+        };
+
+        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
+
+        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+        await channel.send({
+          content: `<@${interaction.user.id}>`,
+          files: [{ attachment: imageBuffer, name: 'pending.png' }],
+        });
+
+        const member = await interaction.guild.members.fetch(interaction.user.id);
+        await member.roles.add(PENDING_ROLE);
+
+        // Update the embed to show that the application is reviewed
+        const message = await interaction.message.fetch();
+        const embed = message.embeds[0];
+        embed.footer.text = 'Reviewed';
+
+        await message.edit({
+          embeds: [embed],
+          components: [], // Remove the buttons
+        });
+
+        // Respond to the interaction
+        await interaction.editReply({
+          content: 'The application has been marked as pending and reviewed.',
+        });
+      }
     } catch (error) {
       console.error('An error occurred:', error);
+
+      // Handle error properly by checking if interaction was acknowledged
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({
           content: 'An error occurred. Please try again later.',
