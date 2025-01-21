@@ -106,13 +106,11 @@ module.exports = (client) => {
         );
 
         const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
-        const message = await channel.send({
+        await channel.send({
           content: `<@${interaction.user.id}>`,
           embeds: [embed],
           components: [actionRow],
         });
-
-        message.customId = message.id;
 
         await interaction.reply({
           content: 'Your application has been submitted.',
@@ -151,39 +149,30 @@ module.exports = (client) => {
       }
 
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const details = {
-          username: interaction.user.username,
-          flightNumber: `${Math.floor(100000 + Math.random() * 900000)}N`,
-          gate: `0${Math.floor(1 + Math.random() * 3)}`,
-          dateTime: moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'),
-          seat: `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`,
-        };
-
+        const details = generateDetails();
         const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
-        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
 
+        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
         await channel.send({
           content: `<@${interaction.user.id}>`,
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
         const message = await interaction.message.fetch();
-        await message.react('❌');
-        await message.edit({ components: [] });
+        const embed = message.embeds[0];
+        embed.footer.text = 'Reviewed';
+
+        await message.edit({
+          embeds: [embed],
+          components: [],
+        });
       }
 
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const details = {
-          username: interaction.user.username,
-          flightNumber: `${Math.floor(100000 + Math.random() * 900000)}N`,
-          gate: `0${Math.floor(1 + Math.random() * 3)}`,
-          dateTime: moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'),
-          seat: `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`,
-        };
-
+        const details = generateDetails();
         const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
-        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
 
+        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
         await channel.send({
           content: `<@${interaction.user.id}>`,
           files: [{ attachment: imageBuffer, name: 'pending.png' }],
@@ -193,16 +182,25 @@ module.exports = (client) => {
         await member.roles.add(PENDING_ROLE);
 
         const message = await interaction.message.fetch();
-        await message.react('🔁');
-        await message.edit({ components: [] });
+        const embed = message.embeds[0];
+        embed.footer.text = 'Reviewed';
+
+        await message.edit({
+          embeds: [embed],
+          components: [],
+        });
+      }
+
+      function generateDetails() {
+        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A');
+
+        return { username: interaction.user.username, flightNumber, gate, dateTime, seat };
       }
     } catch (error) {
       console.error('An error occurred:', error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'An error occurred. Please try again later.', ephemeral: true });
-      } else {
-        await interaction.reply({ content: 'An error occurred. Please try again later.', ephemeral: true });
-      }
     }
   });
 
