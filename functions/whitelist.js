@@ -5,10 +5,10 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  AttachmentBuilder,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
-const moment = require('moment-timezone');
 
 // Register the custom font
 GlobalFonts.registerFromPath(
@@ -146,7 +146,21 @@ module.exports = (client) => {
           await user.send({
             content: `❌ Your whitelist application has been rejected.\n\n**Reason**: \`${reason}\``,
           });
+
+          // Send rejection image to the reject channel
+          const rejectChannel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
+          const rejectImage = new AttachmentBuilder(REJECT_IMAGE_URL, { name: 'reject.png' });
+          await rejectChannel.send({ content: `Whitelist application rejected for <@${user.id}>.`, files: [rejectImage] });
         }
+
+        // Update original message
+        const updatedEmbed = targetMessage.embeds[0];
+        updatedEmbed.footer = { text: 'NRP Reviewed' };
+
+        await targetMessage.edit({
+          embeds: [updatedEmbed],
+          components: [],
+        });
 
         await interaction.reply({
           content: `You rejected the whitelist application for <@${user.id}>.`,
@@ -164,7 +178,25 @@ module.exports = (client) => {
           await user.send({
             content: `🔁 Your whitelist application has been put on pending.`,
           });
+
+          // Add the pending role to the user
+          const pendingRole = interaction.guild.roles.cache.get(PENDING_ROLE);
+          await user.roles.add(pendingRole);
+
+          // Send pending image to the pending channel
+          const pendingChannel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+          const pendingImage = new AttachmentBuilder(PENDING_IMAGE_URL, { name: 'pending.png' });
+          await pendingChannel.send({ content: `Whitelist application pending for <@${user.id}>.`, files: [pendingImage] });
         }
+
+        // Update original message
+        const updatedEmbed = targetMessage.embeds[0];
+        updatedEmbed.footer = { text: 'NRP Reviewed' };
+
+        await targetMessage.edit({
+          embeds: [updatedEmbed],
+          components: [],
+        });
 
         await interaction.reply({
           content: `You marked the whitelist application for <@${user.id}> as pending.`,
