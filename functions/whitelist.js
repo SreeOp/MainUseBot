@@ -44,34 +44,35 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
-      if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction
+if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
+  // Remove deferReply here
+  const modal = new ModalBuilder()
+    .setCustomId('whitelist-application')
+    .setTitle('Whitelist Application');
 
-        const modal = new ModalBuilder()
-          .setCustomId('whitelist-application')
-          .setTitle('Whitelist Application');
+  const questions = [
+    { id: 'real-name', label: 'Real Name' },
+    { id: 'real-age', label: 'Real Age' },
+    { id: 'character-name', label: 'Character Name' },
+    { id: 'roleplay-experience', label: 'Roleplay Experience' },
+    { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+  ];
 
-        const questions = [
-          { id: 'real-name', label: 'Real Name' },
-          { id: 'real-age', label: 'Real Age' },
-          { id: 'character-name', label: 'Character Name' },
-          { id: 'roleplay-experience', label: 'Roleplay Experience' },
-          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
-        ];
+  questions.forEach((q) => {
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId(q.id)
+          .setLabel(q.label)
+          .setStyle(TextInputStyle.Short)
+      )
+    );
+  });
 
-        questions.forEach((q) => {
-          modal.addComponents(
-            new ActionRowBuilder().addComponents(
-              new TextInputBuilder()
-                .setCustomId(q.id)
-                .setLabel(q.label)
-                .setStyle(TextInputStyle.Short)
-            )
-          );
-        });
+  // Show modal (implicitly defers the interaction)
+  await interaction.showModal(modal);
+}
 
-        await interaction.showModal(modal);
-      }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
         await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction
