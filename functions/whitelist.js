@@ -45,9 +45,7 @@ module.exports = (client) => {
   client.on('interactionCreate', async (interaction) => {
     try {
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        // Acknowledge the interaction immediately
-        await interaction.deferReply({ ephemeral: true });
-
+        // Show the modal directly without deferring the reply
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
           .setTitle('Whitelist Application');
@@ -72,6 +70,7 @@ module.exports = (client) => {
         });
 
         await interaction.showModal(modal);
+        return;
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
@@ -122,6 +121,7 @@ module.exports = (client) => {
           content: 'Your application has been submitted.',
           ephemeral: true,
         });
+        return;
       }
 
       const generateTicketImage = async (details, imageURL) => {
