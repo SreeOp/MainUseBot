@@ -2,9 +2,9 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder,  // Added ModalBuilder import
-  TextInputBuilder,  // Added TextInputBuilder import
-  TextInputStyle,  // Added TextInputStyle import
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -112,7 +112,6 @@ module.exports = (client) => {
           components: [actionRow],
         });
 
-        // Store message ID for later update (in case buttons are pressed)
         message.customId = message.id;
 
         await interaction.reply({
@@ -128,27 +127,22 @@ module.exports = (client) => {
 
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-        // Set custom font and style for the name
         ctx.font = '23px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.username.toUpperCase(), 355, 165);
 
-        // Set custom font and style for date and time
         ctx.font = '23px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.dateTime, 550, 250);
 
-        // Set custom font and style for flight number
         ctx.font = '20px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.flightNumber, 25, 180);
 
-        // Set custom font and style for seat
         ctx.font = '24px SkCustom';
         ctx.fillStyle = '#FFFFFF';
         ctx.fillText(details.seat, 905, 200);
 
-        // Set custom font and style for gate
         ctx.font = '20px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.gate, 168, 180);
@@ -157,60 +151,39 @@ module.exports = (client) => {
       }
 
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
         const details = {
           username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
+          flightNumber: `${Math.floor(100000 + Math.random() * 900000)}N`,
+          gate: `0${Math.floor(1 + Math.random() * 3)}`,
+          dateTime: moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'),
+          seat: `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`,
         };
 
         const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
-
         const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
+
         await channel.send({
           content: `<@${interaction.user.id}>`,
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        // Update the embed to show that the application is reviewed
         const message = await interaction.message.fetch();
-        const embed = message.embeds[0];
-        embed.footer.text = 'Reviewed';
-
-        await message.edit({
-          embeds: [embed],
-          components: [], // Remove the buttons
-        });
-
-        await interaction.reply({
-          content: 'The application has been rejected and reviewed.',
-          ephemeral: true,
-        });
+        await message.react('❌');
+        await message.edit({ components: [] });
       }
 
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
         const details = {
           username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
+          flightNumber: `${Math.floor(100000 + Math.random() * 900000)}N`,
+          gate: `0${Math.floor(1 + Math.random() * 3)}`,
+          dateTime: moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'),
+          seat: `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`,
         };
 
         const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
-
         const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+
         await channel.send({
           content: `<@${interaction.user.id}>`,
           files: [{ attachment: imageBuffer, name: 'pending.png' }],
@@ -219,20 +192,9 @@ module.exports = (client) => {
         const member = await interaction.guild.members.fetch(interaction.user.id);
         await member.roles.add(PENDING_ROLE);
 
-        // Update the embed to show that the application is reviewed
         const message = await interaction.message.fetch();
-        const embed = message.embeds[0];
-        embed.footer.text = 'Reviewed';
-
-        await message.edit({
-          embeds: [embed],
-          components: [], // Remove the buttons
-        });
-
-        await interaction.reply({
-          content: 'The application has been marked as pending and reviewed.',
-          ephemeral: true,
-        });
+        await message.react('🔁');
+        await message.edit({ components: [] });
       }
     } catch (error) {
       console.error('An error occurred:', error);
