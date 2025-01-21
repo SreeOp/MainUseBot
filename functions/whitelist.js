@@ -1,5 +1,3 @@
-my code
-
 const {
   ActionRowBuilder,
   ButtonBuilder,
