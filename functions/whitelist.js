@@ -2,9 +2,9 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder,  // Added ModalBuilder import
-  TextInputBuilder,  // Added TextInputBuilder import
-  TextInputStyle,  // Added TextInputStyle import
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -44,6 +44,7 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
+      // Handle button interactions for the whitelist application
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
@@ -68,6 +69,7 @@ module.exports = (client) => {
           );
         });
 
+        // Show the modal to the user
         await interaction.showModal(modal);
       }
 
@@ -115,12 +117,14 @@ module.exports = (client) => {
         // Store message ID for later update (in case buttons are pressed)
         message.customId = message.id;
 
+        // Send a reply to acknowledge the interaction
         await interaction.reply({
           content: 'Your application has been submitted.',
           ephemeral: true,
         });
       }
 
+      // Handle button interactions for Pending or Reject
       async function generateTicketImage(details, imageURL) {
         const canvas = createCanvas(1024, 331);
         const ctx = canvas.getContext('2d');
@@ -129,34 +133,32 @@ module.exports = (client) => {
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
         // Set custom font and style for the name
-        ctx.font = '23px SkCustom';
+        ctx.font = '35px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.username.toUpperCase(), 355, 165);
+        ctx.fillText(details.username.toUpperCase(), 550, 250);
 
         // Set custom font and style for date and time
-        ctx.font = '23px SkCustom';
+        ctx.font = '33px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.dateTime, 550, 250);
+        ctx.fillText(details.dateTime, 30, 365);
 
         // Set custom font and style for flight number
-        ctx.font = '20px SkCustom';
+        ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.flightNumber, 25, 180);
+        ctx.fillText(details.flightNumber, 30, 300);
 
         // Set custom font and style for seat
-        ctx.font = '24px SkCustom';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(details.seat, 905, 200);
-
-        // Set custom font and style for gate
-        ctx.font = '20px SkCustom';
+        ctx.font = '30px SkCustom';
         ctx.fillStyle = '#21130d';
-        ctx.fillText(details.gate, 168, 180);
+        ctx.fillText(details.seat, 30, 335);
 
         return canvas.toBuffer('image/png');
       }
 
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+      if (interaction.isButton() && (interaction.customId === 'reject-whitelist' || interaction.customId === 'pending-whitelist')) {
+        // Defer the reply to avoid timing out the interaction
+        await interaction.deferReply();
+
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -170,15 +172,15 @@ module.exports = (client) => {
           seat,
         };
 
-        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
+        const imageBuffer = await generateTicketImage(details, interaction.customId === 'reject-whitelist' ? REJECT_IMAGE_URL : PENDING_IMAGE_URL);
 
-        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
+        const channel = interaction.guild.channels.cache.get(interaction.customId === 'reject-whitelist' ? REJECT_CHANNEL : PENDING_CHANNEL);
         await channel.send({
           content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
+          files: [{ attachment: imageBuffer, name: 'ticket.png' }],
         });
 
-        // Update the embed to show that the application is reviewed
+        // Update the application message to indicate that it has been reviewed
         const message = await interaction.message.fetch();
         const embed = message.embeds[0];
         embed.footer.text = 'Reviewed';
@@ -188,50 +190,9 @@ module.exports = (client) => {
           components: [], // Remove the buttons
         });
 
-        await interaction.reply({
-          content: 'The application has been rejected and reviewed.',
-          ephemeral: true,
-        });
-      }
-
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
-        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
-        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
-
-        const details = {
-          username: interaction.user.username,
-          flightNumber,
-          gate,
-          dateTime,
-          seat,
-        };
-
-        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
-
-        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
-        await channel.send({
-          content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: 'pending.png' }],
-        });
-
-        const member = await interaction.guild.members.fetch(interaction.user.id);
-        await member.roles.add(PENDING_ROLE);
-
-        // Update the embed to show that the application is reviewed
-        const message = await interaction.message.fetch();
-        const embed = message.embeds[0];
-        embed.footer.text = 'Reviewed';
-
-        await message.edit({
-          embeds: [embed],
-          components: [], // Remove the buttons
-        });
-
-        await interaction.reply({
-          content: 'The application has been marked as pending and reviewed.',
-          ephemeral: true,
+        // Acknowledge the interaction
+        await interaction.editReply({
+          content: `The application has been marked as ${interaction.customId === 'reject-whitelist' ? 'rejected' : 'pending'} and reviewed.`,
         });
       }
     } catch (error) {
