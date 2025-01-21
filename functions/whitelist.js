@@ -45,9 +45,7 @@ module.exports = (client) => {
   client.on('interactionCreate', async (interaction) => {
     try {
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        // Defer the reply to give more time to process
-        await interaction.deferReply({ ephemeral: true });
-
+        // Show the modal without deferring the reply
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
           .setTitle('Whitelist Application');
@@ -73,13 +71,7 @@ module.exports = (client) => {
 
         await interaction.showModal(modal);
 
-        // Update the deferred reply
-        await interaction.editReply({
-          content: 'Please fill out the whitelist application form.',
-        });
-      }
-
-      if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
+      } else if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
         // Defer the reply to give more time to process
         await interaction.deferReply({ ephemeral: true });
 
@@ -129,44 +121,8 @@ module.exports = (client) => {
         await interaction.editReply({
           content: 'Your application has been submitted.',
         });
-      }
 
-      async function generateTicketImage(details, imageURL) {
-        const canvas = createCanvas(1024, 331);
-        const ctx = canvas.getContext('2d');
-        const background = await loadImage(imageURL);
-
-        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-        // Set custom font and style for the name
-        ctx.font = '23px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.username.toUpperCase(), 355, 165);
-
-        // Set custom font and style for date and time
-        ctx.font = '23px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.dateTime, 550, 250);
-
-        // Set custom font and style for flight number
-        ctx.font = '20px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.flightNumber, 25, 180);
-
-        // Set custom font and style for seat
-        ctx.font = '24px SkCustom';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(details.seat, 905, 200);
-
-        // Set custom font and style for gate
-        ctx.font = '20px SkCustom';
-        ctx.fillStyle = '#21130d';
-        ctx.fillText(details.gate, 168, 180);
-
-        return canvas.toBuffer('image/png');
-      }
-
-      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
+      } else if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
         // Defer the reply to give more time to process
         await interaction.deferReply({ ephemeral: true });
 
@@ -204,9 +160,8 @@ module.exports = (client) => {
         await interaction.editReply({
           content: 'The application has been rejected and reviewed.',
         });
-      }
 
-      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+      } else if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
         // Defer the reply to give more time to process
         await interaction.deferReply({ ephemeral: true });
 
@@ -247,16 +202,60 @@ module.exports = (client) => {
         await interaction.editReply({
           content: 'The application has been marked as pending and reviewed.',
         });
+
       }
     } catch (error) {
       console.error('An error occurred:', error);
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'An error occurred. Please try again later.', ephemeral: true });
+        await interaction.followUp({
+          content: 'An error occurred. Please try again later.',
+          ephemeral: true,
+          flags: 64 // Use flags for ephemeral response
+        });
       } else {
-        await interaction.reply({ content: 'An error occurred. Please try again later.', ephemeral: true });
+        await interaction.reply({
+          content: 'An error occurred. Please try again later.',
+          ephemeral: true,
+          flags: 64 // Use flags for ephemeral response
+        });
       }
     }
   });
 
   return initializeWhitelistMessage;
 };
+
+async function generateTicketImage(details, imageURL) {
+  const canvas = createCanvas(1024, 331);
+  const ctx = canvas.getContext('2d');
+  const background = await loadImage(imageURL);
+
+  ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+  // Set custom font and style for the name
+  ctx.font = '23px SkCustom';
+  ctx.fillStyle = '#21130d';
+  ctx.fillText(details.username.toUpperCase(), 355, 165);
+
+  // Set custom font and style for date and time
+  ctx.font = '23px SkCustom';
+  ctx.fillStyle = '#21130d';
+  ctx.fillText(details.dateTime, 550, 250);
+
+  // Set custom font and style for flight number
+  ctx.font = '20px SkCustom';
+  ctx.fillStyle = '#21130d';
+  ctx.fillText(details.flightNumber, 25, 180);
+
+  // Set custom font and style for seat
+  ctx.font = '24px SkCustom';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(details.seat, 905, 200);
+
+  // Set custom font and style for gate
+  ctx.font = '20px SkCustom';
+  ctx.fillStyle = '#21130d';
+  ctx.fillText(details.gate, 168, 180);
+
+  return canvas.toBuffer('image/png');
+}
