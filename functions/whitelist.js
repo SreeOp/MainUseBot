@@ -2,9 +2,9 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
+  ModalBuilder,  // Added ModalBuilder import
+  TextInputBuilder,  // Added TextInputBuilder import
+  TextInputStyle,  // Added TextInputStyle import
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -44,38 +44,44 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
-if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-  // Remove deferReply here
-  const modal = new ModalBuilder()
-    .setCustomId('whitelist-application')
-    .setTitle('Whitelist Application');
+      if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
+        // Defer the reply to give more time to process
+        await interaction.deferReply({ ephemeral: true });
 
-  const questions = [
-    { id: 'real-name', label: 'Real Name' },
-    { id: 'real-age', label: 'Real Age' },
-    { id: 'character-name', label: 'Character Name' },
-    { id: 'roleplay-experience', label: 'Roleplay Experience' },
-    { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
-  ];
+        const modal = new ModalBuilder()
+          .setCustomId('whitelist-application')
+          .setTitle('Whitelist Application');
 
-  questions.forEach((q) => {
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId(q.id)
-          .setLabel(q.label)
-          .setStyle(TextInputStyle.Short)
-      )
-    );
-  });
+        const questions = [
+          { id: 'real-name', label: 'Real Name' },
+          { id: 'real-age', label: 'Real Age' },
+          { id: 'character-name', label: 'Character Name' },
+          { id: 'roleplay-experience', label: 'Roleplay Experience' },
+          { id: 'read-rules', label: 'Did you read the rules (yes/no)?' },
+        ];
 
-  // Show modal (implicitly defers the interaction)
-  await interaction.showModal(modal);
-}
+        questions.forEach((q) => {
+          modal.addComponents(
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId(q.id)
+                .setLabel(q.label)
+                .setStyle(TextInputStyle.Short)
+            )
+          );
+        });
 
+        await interaction.showModal(modal);
+
+        // Update the deferred reply
+        await interaction.editReply({
+          content: 'Please fill out the whitelist application form.',
+        });
+      }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
-        await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction
+        // Defer the reply to give more time to process
+        await interaction.deferReply({ ephemeral: true });
 
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
@@ -120,9 +126,8 @@ if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
         // Store message ID for later update (in case buttons are pressed)
         message.customId = message.id;
 
-        await interaction.followUp({
+        await interaction.editReply({
           content: 'Your application has been submitted.',
-          ephemeral: true,
         });
       }
 
@@ -162,7 +167,8 @@ if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
       }
 
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction
+        // Defer the reply to give more time to process
+        await interaction.deferReply({ ephemeral: true });
 
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
@@ -195,14 +201,14 @@ if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
           components: [], // Remove the buttons
         });
 
-        await interaction.followUp({
+        await interaction.editReply({
           content: 'The application has been rejected and reviewed.',
-          ephemeral: true,
         });
       }
 
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction
+        // Defer the reply to give more time to process
+        await interaction.deferReply({ ephemeral: true });
 
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
@@ -238,9 +244,8 @@ if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
           components: [], // Remove the buttons
         });
 
-        await interaction.followUp({
+        await interaction.editReply({
           content: 'The application has been marked as pending and reviewed.',
-          ephemeral: true,
         });
       }
     } catch (error) {
