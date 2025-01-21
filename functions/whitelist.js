@@ -10,14 +10,12 @@ const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
 const moment = require('moment-timezone');
 
-// Register the custom font
 GlobalFonts.registerFromPath(
   path.join(__dirname, '..', '..', 'fonts', 'A25-SQUANOVA.ttf'),
   'SkCustom'
 );
 
 module.exports = (client) => {
-  // Configuration
   const APPLICATION_CHANNEL = '1255162116126539786';
   const PENDING_CHANNEL = '1313134410282962996';
   const REJECT_CHANNEL = '1313134410282962996';
@@ -44,7 +42,6 @@ module.exports = (client) => {
 
   client.on('interactionCreate', async (interaction) => {
     try {
-      // Handle Apply button press
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
@@ -72,7 +69,6 @@ module.exports = (client) => {
         await interaction.showModal(modal);
       }
 
-      // Handle modal submission
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
@@ -114,10 +110,8 @@ module.exports = (client) => {
           components: [actionRow],
         });
 
-        // Store message ID for later update (in case buttons are pressed)
         message.customId = message.id;
 
-        // Acknowledge the interaction
         if (interaction.replied || interaction.deferred) {
           await interaction.followUp({
             content: 'Your application has been submitted.',
@@ -131,7 +125,6 @@ module.exports = (client) => {
         }
       }
 
-      // Function to generate ticket image
       async function generateTicketImage(details, imageURL) {
         const canvas = createCanvas(1024, 331);
         const ctx = canvas.getContext('2d');
@@ -139,27 +132,22 @@ module.exports = (client) => {
 
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-        // Set custom font and style for the name
         ctx.font = '23px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.username.toUpperCase(), 355, 165);
 
-        // Set custom font and style for date and time
         ctx.font = '23px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.dateTime, 550, 250);
 
-        // Set custom font and style for flight number
         ctx.font = '20px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.flightNumber, 25, 180);
 
-        // Set custom font and style for seat
         ctx.font = '24px SkCustom';
         ctx.fillStyle = '#FFFFFF';
         ctx.fillText(details.seat, 905, 200);
 
-        // Set custom font and style for gate
         ctx.font = '20px SkCustom';
         ctx.fillStyle = '#21130d';
         ctx.fillText(details.gate, 168, 180);
@@ -167,13 +155,28 @@ module.exports = (client) => {
         return canvas.toBuffer('image/png');
       }
 
-      // Reject whitelist application
       if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
-        if (!interaction.deferred) await interaction.deferReply(); // Defer reply to avoid timeouts
+        const modal = new ModalBuilder()
+          .setCustomId('reject-reason-modal')
+          .setTitle('Rejection Reason');
+
+        const reasonInput = new TextInputBuilder()
+          .setCustomId('reject-reason')
+          .setLabel('Reason for rejection')
+          .setStyle(TextInputStyle.Paragraph);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
+
+        await interaction.showModal(modal);
+      }
+
+      if (interaction.isModalSubmit() && interaction.customId === 'reject-reason-modal') {
+        const reason = interaction.fields.getTextInputValue('reject-reason');
+
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A');
 
         const details = {
           username: interaction.user.username,
@@ -185,35 +188,37 @@ module.exports = (client) => {
 
         const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
 
+        const user = await interaction.user.send({
+          content: `❌ Your whitelist application has been rejected.\n\n**Reason**: ${reason}`,
+        });
+
         const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
         await channel.send({
           content: `<@${interaction.user.id}>`,
           files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        // Update the embed to show that the application is reviewed
         const message = await interaction.message.fetch();
         const embed = message.embeds[0];
         embed.footer.text = 'Reviewed';
 
         await message.edit({
           embeds: [embed],
-          components: [], // Remove the buttons
+          components: [],
         });
 
-        // Respond to the interaction
-        await interaction.editReply({
-          content: 'The application has been rejected and reviewed.',
+        await interaction.reply({
+          content: 'The rejection reason has been sent to the user.',
+          ephemeral: true,
         });
       }
 
-      // Set application as pending
       if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
-        if (!interaction.deferred) await interaction.deferReply(); // Defer reply to avoid timeouts
+        if (!interaction.deferred) await interaction.deferReply();
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
-        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A');
 
         const details = {
           username: interaction.user.username,
@@ -225,6 +230,10 @@ module.exports = (client) => {
 
         const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
 
+        await interaction.user.send({
+          content: '🔁 Your whitelist application has been put on pending.',
+        });
+
         const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
         await channel.send({
           content: `<@${interaction.user.id}>`,
@@ -234,25 +243,22 @@ module.exports = (client) => {
         const member = await interaction.guild.members.fetch(interaction.user.id);
         await member.roles.add(PENDING_ROLE);
 
-        // Update the embed to show that the application is reviewed
         const message = await interaction.message.fetch();
         const embed = message.embeds[0];
         embed.footer.text = 'Reviewed';
 
         await message.edit({
           embeds: [embed],
-          components: [], // Remove the buttons
+          components: [],
         });
 
-        // Respond to the interaction
         await interaction.editReply({
-          content: 'The application has been marked as pending and reviewed.',
+          content: 'The application has been marked as pending and the user has been notified.',
         });
       }
     } catch (error) {
       console.error('An error occurred:', error);
 
-      // Handle error properly by checking if interaction was acknowledged
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({
           content: 'An error occurred. Please try again later.',
