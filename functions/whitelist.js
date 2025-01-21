@@ -1,10 +1,12 @@
+my code
+
 const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
+  ModalBuilder,  // Added ModalBuilder import
+  TextInputBuilder,  // Added TextInputBuilder import
+  TextInputStyle,  // Added TextInputStyle import
 } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
@@ -45,7 +47,6 @@ module.exports = (client) => {
   client.on('interactionCreate', async (interaction) => {
     try {
       if (interaction.isButton() && interaction.customId === 'apply-whitelist') {
-        // Show the modal directly without deferring the reply
         const modal = new ModalBuilder()
           .setCustomId('whitelist-application')
           .setTitle('Whitelist Application');
@@ -70,13 +71,9 @@ module.exports = (client) => {
         });
 
         await interaction.showModal(modal);
-        return;
       }
 
       if (interaction.isModalSubmit() && interaction.customId === 'whitelist-application') {
-        // Acknowledge the modal submission
-        await interaction.deferReply({ ephemeral: true });
-
         const answers = [
           interaction.fields.getTextInputValue('real-name'),
           interaction.fields.getTextInputValue('real-age'),
@@ -111,20 +108,22 @@ module.exports = (client) => {
         );
 
         const channel = interaction.guild.channels.cache.get(APPLICATION_CHANNEL);
-        await channel.send({
+        const message = await channel.send({
           content: `<@${interaction.user.id}>`,
           embeds: [embed],
           components: [actionRow],
         });
 
-        await interaction.followUp({
+        // Store message ID for later update (in case buttons are pressed)
+        message.customId = message.id;
+
+        await interaction.reply({
           content: 'Your application has been submitted.',
           ephemeral: true,
         });
-        return;
       }
 
-      const generateTicketImage = async (details, imageURL) => {
+      async function generateTicketImage(details, imageURL) {
         const canvas = createCanvas(1024, 331);
         const ctx = canvas.getContext('2d');
         const background = await loadImage(imageURL);
@@ -157,13 +156,9 @@ module.exports = (client) => {
         ctx.fillText(details.gate, 168, 180);
 
         return canvas.toBuffer('image/png');
-      };
+      }
 
-      if (interaction.isButton() && ['reject-whitelist', 'pending-whitelist'].includes(interaction.customId)) {
-        // Acknowledge the interaction immediately
-        await interaction.deferReply({ ephemeral: true });
-
-        const isPending = interaction.customId === 'pending-whitelist';
+      if (interaction.isButton() && interaction.customId === 'reject-whitelist') {
         const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
         const gate = `0${Math.floor(1 + Math.random() * 3)}`;
         const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
@@ -177,37 +172,75 @@ module.exports = (client) => {
           seat,
         };
 
-        const imageURL = isPending ? PENDING_IMAGE_URL : REJECT_IMAGE_URL;
-        const channel = interaction.guild.channels.cache.get(isPending ? PENDING_CHANNEL : REJECT_CHANNEL);
-        const imageBuffer = await generateTicketImage(details, imageURL);
+        const imageBuffer = await generateTicketImage(details, REJECT_IMAGE_URL);
 
+        const channel = interaction.guild.channels.cache.get(REJECT_CHANNEL);
         await channel.send({
           content: `<@${interaction.user.id}>`,
-          files: [{ attachment: imageBuffer, name: isPending ? 'pending.png' : 'rejected.png' }],
+          files: [{ attachment: imageBuffer, name: 'rejected.png' }],
         });
 
-        if (isPending) {
-          const member = await interaction.guild.members.fetch(interaction.user.id);
-          await member.roles.add(PENDING_ROLE);
-        }
-
+        // Update the embed to show that the application is reviewed
         const message = await interaction.message.fetch();
         const embed = message.embeds[0];
         embed.footer.text = 'Reviewed';
 
         await message.edit({
           embeds: [embed],
-          components: [],
+          components: [], // Remove the buttons
         });
 
-        await interaction.followUp({
-          content: `The application has been ${isPending ? 'marked as pending' : 'rejected'} and reviewed.`,
+        await interaction.reply({
+          content: 'The application has been rejected and reviewed.',
+          ephemeral: true,
+        });
+      }
+
+      if (interaction.isButton() && interaction.customId === 'pending-whitelist') {
+        const flightNumber = `${Math.floor(100000 + Math.random() * 900000)}N`;
+        const gate = `0${Math.floor(1 + Math.random() * 3)}`;
+        const seat = `${Math.floor(50 + Math.random() * 50)}${String.fromCharCode(65 + Math.random() * 6)}`;
+        const dateTime = moment().tz('Asia/Kolkata').format('DD/MM/YYYY hh:mm:ss A'); // 12-hour format
+
+        const details = {
+          username: interaction.user.username,
+          flightNumber,
+          gate,
+          dateTime,
+          seat,
+        };
+
+        const imageBuffer = await generateTicketImage(details, PENDING_IMAGE_URL);
+
+        const channel = interaction.guild.channels.cache.get(PENDING_CHANNEL);
+        await channel.send({
+          content: `<@${interaction.user.id}>`,
+          files: [{ attachment: imageBuffer, name: 'pending.png' }],
+        });
+
+        const member = await interaction.guild.members.fetch(interaction.user.id);
+        await member.roles.add(PENDING_ROLE);
+
+        // Update the embed to show that the application is reviewed
+        const message = await interaction.message.fetch();
+        const embed = message.embeds[0];
+        embed.footer.text = 'Reviewed';
+
+        await message.edit({
+          embeds: [embed],
+          components: [], // Remove the buttons
+        });
+
+        await interaction.reply({
+          content: 'The application has been marked as pending and reviewed.',
           ephemeral: true,
         });
       }
     } catch (error) {
       console.error('An error occurred:', error);
-      if (!interaction.replied && !interaction.deferred) {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: 'An error occurred. Please try again later.', ephemeral: true });
+      } else {
         await interaction.reply({ content: 'An error occurred. Please try again later.', ephemeral: true });
       }
     }
