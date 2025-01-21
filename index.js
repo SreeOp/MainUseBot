@@ -91,7 +91,7 @@ client.login(process.env.DISCORD_TOKEN);
 
 // Set up an Express server
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9018;
 
 app.get('/', (req, res) => {
   res.send('Bot is running!');
