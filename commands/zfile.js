@@ -3,7 +3,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = re
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('zfile')
-    .setDescription('Send an image with a download button')
+    .setDescription('Send an image with a download button in the channel')
     .addStringOption(option =>
       option.setName('imageurl')
         .setDescription('The URL of the image to display')
@@ -18,9 +18,7 @@ module.exports = {
     const downloadLink = interaction.options.getString('downloadlink');
 
     // Validate URLs (basic check)
-    if (!imageUrl.startsWith('http') || !downloadLink.startsWith('http')) {
-      return interaction.reply({ content: '❌ Please provide valid URLs.', ephemeral: true });
-    }
+    if (!imageUrl.startsWith('http') || !downloadLink.startsWith('http')) return;
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -29,11 +27,11 @@ module.exports = {
         .setStyle(ButtonStyle.Link)
     );
 
-    // Send the message without replying to the command
+    // Send the message in the channel without replying
     await interaction.channel.send({ content: imageUrl, components: [row] });
 
-    // Defer reply to avoid "interaction failed" error
+    // Defer reply to avoid interaction expired error
     await interaction.deferReply({ ephemeral: true });
-    await interaction.deleteReply();
+    await interaction.deleteReply(); // Deletes the command reply
   },
 };
