@@ -29,6 +29,11 @@ module.exports = {
         .setStyle(ButtonStyle.Link)
     );
 
-    await interaction.reply({ content: imageUrl, components: [row] });
+    // Send the message without replying to the command
+    await interaction.channel.send({ content: imageUrl, components: [row] });
+
+    // Defer reply to avoid "interaction failed" error
+    await interaction.deferReply({ ephemeral: true });
+    await interaction.deleteReply();
   },
 };
